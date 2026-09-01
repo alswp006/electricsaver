@@ -5,46 +5,15 @@ import {
   FUEL_RATE,
   VAT_RATE,
   FUND_RATE,
-  MAX_KWH,
   type RateStage,
 } from "./rateTable";
+import { getStage, getNextStageGap } from "./stage";
+import { assertBillInput } from "./validate";
 
-export function getStage(kWh: number, month: number): 1 | 2 | 3 {
-  const isSummer = month === 7 || month === 8;
-  const rates = isSummer ? RATE_TABLE.summer : RATE_TABLE.winter;
-
-  if (kWh <= rates[0].limit) return 1;
-  if (kWh <= rates[1].limit) return 2;
-  return 3;
-}
-
-export function getNextStageGap(kWh: number, month: number): number {
-  const isSummer = month === 7 || month === 8;
-  const rates = isSummer ? RATE_TABLE.summer : RATE_TABLE.winter;
-
-  if (kWh <= rates[0].limit) {
-    return rates[0].limit - kWh;
-  }
-  if (kWh <= rates[1].limit) {
-    return rates[1].limit - kWh;
-  }
-  return 0;
-}
+export { getStage, getNextStageGap };
 
 export function calculateBill(kWh: number, month: number): BillBreakdown {
-  // Input validation
-  if (typeof kWh !== "number" || !Number.isFinite(kWh)) {
-    throw new RangeError("kWh must be a number");
-  }
-  if (kWh < 0) {
-    throw new RangeError("kWh must be 0 or greater");
-  }
-  if (kWh > MAX_KWH) {
-    throw new RangeError("kWh must be 3000 or less");
-  }
-  if (!Number.isInteger(month) || month < 1 || month > 12) {
-    throw new RangeError("month must be 1-12");
-  }
+  assertBillInput(kWh, month);
 
   const isSummer = month === 7 || month === 8;
   const rates = isSummer ? RATE_TABLE.summer : RATE_TABLE.winter;
