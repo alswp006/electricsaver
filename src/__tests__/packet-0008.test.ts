@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { act, render, renderHook, screen } from "@testing-library/react";
-import { mockAll } from "@/__tests__/__helpers__/mocks";
+import { mockAll } from "@/__tests__/__helpers__/mockAll";
 import { useQuotaToast } from "@/hooks/useQuotaToast";
 
 mockAll();

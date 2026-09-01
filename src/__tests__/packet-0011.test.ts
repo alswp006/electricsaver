@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { mockAll } from "@/__tests__/__helpers__/mocks";
+import { mockAll } from "@/__tests__/__helpers__/mockAll";
 import { APPLIANCES } from "@/domain/appliances";
 import type { ApplianceCut } from "@/lib/types";
 

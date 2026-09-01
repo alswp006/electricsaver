@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { mockAll } from "@/__tests__/__helpers__/mocks";
+import { mockAll } from "@/__tests__/__helpers__/mockAll";
 import { Amount } from "@/components/Amount";
 import { MiniBar } from "@/components/MiniBar";
 import { Sparkline } from "@/components/Sparkline";
