@@ -47,6 +47,7 @@ export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (!adGroupId) return;
     const target = containerRef.current;
     if (!target) return;
     if (!isBannerSupported()) return;
@@ -68,6 +69,9 @@ export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
       }
     };
   }, [adGroupId, variant, theme]);
+
+  // adGroupId(env)가 없으면 광고 영역 자체를 렌더하지 않는다 — 빈 회색 박스 노출 방지
+  if (!adGroupId) return null;
 
   return <div ref={containerRef} data-ad-group-id={adGroupId} className={className ?? "ad-slot"} />;
 }

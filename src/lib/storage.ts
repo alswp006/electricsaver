@@ -42,25 +42,39 @@ export function writeJSON<T>(key: string, value: T): WriteResult {
 
 export function removeKeys(keys: string[]): void {
   keys.forEach((key) => {
-    localStorage.removeItem(key);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Storage unavailable — nothing to do
+    }
   });
 }
 
 export function getStorageBytes(): number {
   let total = 0;
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith("es:")) {
-      const value = localStorage.getItem(key) || "";
-      total += key.length + value.length;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("es:")) {
+        const value = localStorage.getItem(key) || "";
+        total += key.length + value.length;
+      }
     }
+  } catch {
+    return 0;
   }
   return total;
 }
 
 export function migrateFlags(): void {
   const fallback: AppFlags = { schemaVersion: 1, disclaimerSeenAt: null };
-  const current = localStorage.getItem("es:flags");
+  let current: string | null = null;
+  try {
+    current = localStorage.getItem("es:flags");
+  } catch {
+    // Storage unavailable — nothing to migrate
+    return;
+  }
 
   if (!current) {
     // Key does not exist, create with default
@@ -99,9 +113,17 @@ export function getItem<T>(key: string): T | null {
 }
 
 export function setItem<T>(key: string, value: T): void {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage unavailable/quota exceeded — silently no-op
+  }
 }
 
 export function removeItem(key: string): void {
-  localStorage.removeItem(key);
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Storage unavailable — nothing to do
+  }
 }
