@@ -56,8 +56,121 @@ export type ApplianceStepperCard = { applianceId: string; current: number; onUpd
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
-// Domain types — add your app-specific types here
-export {};
+export type ContractType = "low" | "high";
+
+export interface TariffTier {
+  limitKWh: number | null;
+  rate: number;
+  baseFee: number;
+}
+
+export interface TariffTable {
+  version: string;
+  effectiveFrom: string;
+  sourceLabel: string;
+  summerMonths: number[];
+  climateRate: number;
+  fuelAdjRate: number;
+  vatRate: number;
+  fundRate: number;
+  normal: Record<ContractType, TariffTier[]>;
+  summer: Record<ContractType, TariffTier[]>;
+}
+
+export interface BillInput {
+  kWh: number;
+  yearMonth: string;
+  contractType: ContractType;
+}
+
+export interface TierUsage {
+  tier: 1 | 2 | 3;
+  kWh: number;
+  rate: number;
+  fee: number;
+}
+
+export interface BillBreakdown {
+  input: BillInput;
+  isSummerRelief: boolean;
+  tariffVersion: string;
+  baseFee: number;
+  tiers: TierUsage[];
+  energyFee: number;
+  climateFee: number;
+  fuelAdjFee: number;
+  subtotal: number;
+  vat: number;
+  fund: number;
+  total: number;
+  marginalRate: number;
+}
+
+export interface UsageRecord {
+  id: string;
+  yearMonth: string;
+  kWh: number;
+  contractType: ContractType;
+  total: number;
+  tariffVersion: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AppSettings {
+  contractType: ContractType;
+  regionCode: string;
+  householdSize: 1 | 2 | 3 | 4;
+  lastYearMonth: string | null;
+}
+
+export interface ApplianceCut {
+  applianceId: string;
+  cutHoursPerDay: number;
+}
+
+export interface SimulationInput {
+  baseRecordId: string;
+  cuts: ApplianceCut[];
+  days: number;
+}
+
+export type ReportUnlock = Record<string, number>;
+
+export interface Appliance {
+  id: string;
+  name: string;
+  watt: number;
+  defaultHours: number;
+  icon: string;
+}
+
+export interface RegionAverageEntry {
+  regionCode: string;
+  regionName: string;
+  monthly: Record<string, number>;
+}
+
+export type RouteState = {
+  "/": void;
+  "/result": { input: BillInput } | null;
+  "/simulate": { recordId: string; input: BillInput } | null;
+  "/report": {
+    recordId: string;
+    input: BillInput;
+    cuts: ApplianceCut[];
+    savedWon: number;
+  } | null;
+  "/history": void;
+  "/compare": void;
+};
+
+export const STORAGE_KEYS = {
+  records: "es:records:v1",
+  settings: "es:settings:v1",
+  sim: "es:sim:last:v1",
+  reportUnlock: "es:report_unlock:v1",
+} as const;
 
 ```
 
@@ -81,6 +194,7 @@ export {};
     TossRewardAd.tsx
   hooks/
   lib/
+    contract.ts
     storage.ts
     types.ts
     utils.ts
@@ -95,7 +209,9 @@ export {};
   vite-env.d.ts
 
 ### Exports (src/lib/)
+- contract.ts: export type Bill =; export type DomainInput =; export type RouteState =; export type calcBillFn = (input: DomainInput) => Bill; export type roundToNearestFn = (value: number, unit?: number) => number; export type validateUsageFn = (value: number) =>; export type compareYoYFn = (currentMonth: Bill, previousYearMonth: Bill) =>; export type recordStoreFn =
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- types.ts: export type ContractType = "low" | "high"; export interface TariffTier; export interface TariffTable; export interface BillInput; export interface TierUsage; export interface BillBreakdown; export interface UsageRecord; export interface AppSettings
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -115,73 +231,5 @@ export {};
 - TossRewardAd.tsx: TossRewardAd
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/lib/contract.ts
-export type Bill = { id: string; date: string; usage: number; amountKrw: number; tariffTier: string; breakdown?: Record<string, number> };
-export type DomainInput = { usageKwh: number; appliances?: Record<string, number>; month?: string; regionCode?: string };
-export type RouteState = { currentRoute: 'home' | 'result' | 'history' | 'simulate' | 'report' | 'compare'; bill?: Bill; simResult?: Bill[] };
-export type calcBillFn = (input: DomainInput) => Bill;
-export type roundToNearestFn = (value: number, unit?: number) => number;
-export type validateUsageFn = (value: number) => { valid: boolean; error?: string };
-export type compareYoYFn = (currentMonth: Bill, previousYearMonth: Bill) => { delta: number; percent: number };
-export type recordStoreFn = { list: () => Promise<Bill[]
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(1), general(10), testing(1), ui(1)
-
-Key lessons (verify against actual code before applying):
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)
+## Already Implemented (do NOT duplicate or overwrite)
+- 0001: 도메인 타입 + RouteState 계약 정의 (files: src/lib/types.ts)
