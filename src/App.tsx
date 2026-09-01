@@ -5,6 +5,7 @@ import Result from './pages/Result';
 import History from './pages/History';
 import Simulate from './pages/Simulate';
 import Report from './pages/Report';
+import Compare from './pages/Compare';
 
 // Dev-only TDS Gallery route — `import.meta.env.DEV` is statically replaced
 // (true in dev, false in prod) so the entire import + Route is tree-shaken
@@ -21,6 +22,7 @@ export default function App() {
       <Route path="/history" element={<History />} />
       <Route path="/simulate" element={<Simulate />} />
       <Route path="/report" element={<Report />} />
+      <Route path="/compare" element={<Compare />} />
       {DevTdsGallery && (
         <Route
           path="/__tds-gallery"

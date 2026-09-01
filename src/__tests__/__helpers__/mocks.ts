@@ -161,10 +161,16 @@ export function mockTds() {
       { Header: ({ children }: any) => React.createElement("div", null, children) },
     ),
 
-    Chip: ({ children, selected, onClick }: any) =>
+    // 실 API: Chip은 그룹 컨테이너(div), 개별 선택 항목은 ChipItem(selected/onClick 보유).
+    // kind/shape/size/variant/margin/wrap/withColorBackground는 TDS 전용 prop이라
+    // raw div로 흘려보내면 "non-boolean attribute" 경고가 뜬다 — 걸러내고 나머지만 전달.
+    Chip: ({ children, kind, shape, size, variant, margin, wrap, withColorBackground, ...props }: any) =>
+      React.createElement("div", { role: "group", ...props }, children),
+
+    ChipItem: ({ children, selected, onClick, ...props }: any) =>
       React.createElement(
         "button",
-        { role: "button", "aria-pressed": selected, onClick },
+        { type: "button", role: "button", "aria-pressed": selected, onClick, ...props },
         children,
       ),
 
