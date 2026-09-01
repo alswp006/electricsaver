@@ -18,7 +18,7 @@ describe("safeStorage 기반 계층 (CC-12 대응)", () => {
   describe("AC-1: readJson returns fallback when key missing or JSON corrupted", () => {
     it("should return fallback when key does not exist", async () => {
       const { readJson } = await import("@/lib/safeStorage");
-      const fallback = [];
+      const fallback: unknown[] = [];
       const result = readJson("es:records:v1", fallback);
       expect(result).toEqual(fallback);
       expect(result).toStrictEqual([]);
@@ -27,7 +27,7 @@ describe("safeStorage 기반 계층 (CC-12 대응)", () => {
     it("should return fallback when stored value is corrupted JSON", async () => {
       const { readJson } = await import("@/lib/safeStorage");
       localStorage.setItem("es:records:v1", "{invalid json");
-      const fallback = [];
+      const fallback: unknown[] = [];
       const result = readJson("es:records:v1", fallback);
       expect(result).toEqual(fallback);
       expect(result).toStrictEqual([]);
@@ -132,7 +132,7 @@ describe("safeStorage 기반 계층 (CC-12 대응)", () => {
         writable: true,
       });
       const { readJson } = await import("@/lib/safeStorage");
-      const fallback = [];
+      const fallback: unknown[] = [];
       const result = readJson("es:records:v1", fallback);
       expect(result).toEqual(fallback);
       expect(result).toStrictEqual([]);
