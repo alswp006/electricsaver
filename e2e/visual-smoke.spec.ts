@@ -13,13 +13,19 @@ import { test, expect, type Page } from "@playwright/test";
 const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/result", name: "result" },
+  { path: "/history", name: "history" },
   // { path: "/settings", name: "settings" },
 ];
 
 /** 데이터가 필요한 화면용 localStorage 시드(앱에 맞게 채워라). 앱 스크립트보다 먼저 실행된다. */
 async function seed(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    // window.localStorage.setItem("MY_STORAGE_KEY", JSON.stringify({ /* ... */ }));
+    const records = [
+      { id: "rec_2026-08", yearMonth: "2026-08", kWh: 450, contractType: "low", total: 86500, tariffVersion: "2024-01", createdAt: Date.now(), updatedAt: Date.now() },
+      { id: "rec_2026-07", yearMonth: "2026-07", kWh: 380, contractType: "low", total: 68000, tariffVersion: "2024-01", createdAt: Date.now(), updatedAt: Date.now() },
+      { id: "rec_2026-06", yearMonth: "2026-06", kWh: 300, contractType: "low", total: 52000, tariffVersion: "2024-01", createdAt: Date.now(), updatedAt: Date.now() },
+    ];
+    window.localStorage.setItem("es:records:v1", JSON.stringify(records));
   });
 }
 
