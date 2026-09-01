@@ -1,0 +1,657 @@
+[
+  {
+    "id": "0001",
+    "title": "엔티티 타입 + RouteState 계약 정의",
+    "epic": "Epic 1. 타입/데이터",
+    "task": {
+      "description": "SPEC Data Models의 엔티티 타입과 화면 간 전달 타입(RouteState), localStorage 키 타입을 순수 타입 파일로 작성한다. 런타임 코드 0줄 — interface/type/as const 타입 선언만 포함하며 상수·함수·console 호출을 넣지 않는다. 이후 모든 패킷이 이 타입만 import 해 필드명 불일치를 차단한다.",
+      "acceptance_criteria": [
+        "src/types/domain.ts 가 MeterRecord, UserProfile, ApplianceItem, SimulationSummary, ReportUnlock, AppFlags, RegionAverage, BillBreakdown, StageBreakdownRow 9개 타입을 export 하고 BillBreakdown 은 baseCharge/energyCharge/climateCharge/fuelCharge/subtotal/vat/fund/total/stage/stageBreakdown 10필드를 가짐",
+        "src/types/navigation.ts 가 BillInput, ResultRouteState, SimulateRouteState, ReportRouteState, RouteState 를 SPEC 정의 그대로 export 함",
+        "src/types/storage.ts 가 StorageKey = 'es:records'|'es:profile'|'es:appliances'|'es:report-unlocks'|'es:flags' 를 export 함",
+        "npx tsc --noEmit 통과, grep -E \"console\\.|function |=>\" src/types/*.ts 매칭 0건"
+      ]
+    },
+    "covers": [
+      "CP-8"
+    ],
+    "files": [
+      "src/types/domain.ts",
+      "src/types/navigation.ts",
+      "src/types/storage.ts"
+    ],
+    "definition_of_done": [
+      "3개 파일 생성 후 tsc --noEmit 에러 0건",
+      "런타임 구문 0줄 확인"
+    ],
+    "depends_on": [],
+    "db_schema": "interface MeterRecord { yearMonth: string; kWh: number; total: number; createdAt: number } → key 'es:records' / UserProfile → 'es:profile' / ApplianceItem[] → 'es:appliances' / ReportUnlock[] → 'es:report-unlocks' / AppFlags → 'es:flags'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0002",
+    "title": "요금표 상수 + 정적 카탈로그 데이터",
+    "epic": "Epic 1. 타입/데이터",
+    "task": {
+      "description": "CP-4 한국전력 주택용 저압 요금표 상수와 가전 카탈로그·절약 팁·지역 평균 정적 데이터를 값만 채워 넣는다. 계산 로직·랜덤·날짜 의존 코드는 넣지 않는다. 타입은 자체 로컬 타입 또는 구조적 리터럴로 선언해 다른 패킷 없이도 컴파일되게 한다.",
+      "acceptance_criteria": [
+        "src/domain/rateTable.ts 가 RATE_TABLE(비하계/하계 각 3구간 { limit, baseCharge, unitPrice }), CLIMATE_RATE=9.0, FUEL_RATE=5.0, VAT_RATE=0.1, FUND_RATE=0.037, MAX_KWH=3000 을 export 하고 값이 CP-4 표와 정수 단위까지 일치함(비하계 limit 200/400/Infinity, 하계 300/450/Infinity, baseCharge 910/1600/7300, unitPrice 120.0/214.6/307.3)",
+        "src/data/applianceCatalog.ts 가 aircon/fridge/washer/tv/pc/rice-cooker/dryer/heater 8종 이상을 { id, name, watt, hoursPerDay, reduceRatio } 로 export 하고 aircon 은 { watt:1800, hoursPerDay:6, reduceRatio:0.3 } 임",
+        "src/data/savingTips.ts 가 Record<string,[string,string,string]> 로 카탈로그 전 id에 대해 팁 3줄 고정 문자열을 export 하고 Math.random/Date 참조 0건",
+        "src/data/regionAverage.json 이 17건 배열이며 regionCode '11' 항목이 { regionName: '서울', avgKWh: [210,268,312,349] } 임",
+        "npx tsc --noEmit 통과, grep -nE \"#[0-9a-fA-F]{3,8}\" src/domain src/data 매칭 0건"
+      ]
+    },
+    "covers": [
+      "CP-4",
+      "AC-1.1"
+    ],
+    "files": [
+      "src/domain/rateTable.ts",
+      "src/data/applianceCatalog.ts",
+      "src/data/savingTips.ts",
+      "src/data/regionAverage.json"
+    ],
+    "definition_of_done": [
+      "tsc --noEmit 통과",
+      "resolveJsonModule 로 json import 가능 확인"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0003",
+    "title": "calculateBill 계산 엔진 + CP-6 픽스처 테스트",
+    "epic": "Epic 2. 데이터 계층",
+    "task": {
+      "description": "CP-5 알고리즘 8단계를 그대로 구현한 순수 함수 calculateBill(kWh, month): BillBreakdown 을 작성하고 CP-6 픽스처 5행 유닛 테스트를 붙인다. 하계(7·8월) 구간표 자동 전환, stage/stageBreakdown 반환, 반올림 순서(fund=floor(subtotal*0.037/10)*10, total=floor((subtotal+vat+fund)/10)*10)를 정확히 지킨다.",
+      "acceptance_criteria": [
+        "CP-6 5행(1/3, 150/3, 350/3, 350/8, 500/3) 각각에서 baseCharge/energyCharge/subtotal/vat/fund/total 6필드가 표 값과 정확히 일치(total 1170/23880/71260/60510/127280)",
+        "calculateBill(350,7).total === calculateBill(350,8).total 이고 350/3 과 350/8 모두 stage===2",
+        "calculateBill(500,3).stageBreakdown.length===3 이고 stageBreakdown[2] 가 { stage:3, kWh:100, unitPrice:307.3, charge:30730 } 와 deep-equal, baseCharge===7300",
+        "(350,8) 1000회 호출 총 소요 <50ms 이고 모든 결과가 첫 호출과 toEqual, 함수 본문에 localStorage/fetch/Date.now 참조 0건",
+        "npx vitest run src/domain 전량 green"
+      ]
+    },
+    "covers": [
+      "AC-1.1",
+      "AC-1.2",
+      "AC-1.4",
+      "AC-1.7"
+    ],
+    "files": [
+      "src/domain/calculateBill.ts",
+      "src/domain/__tests__/calculateBill.test.ts"
+    ],
+    "definition_of_done": [
+      "픽스처 5행 테스트 green",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [
+      "0001",
+      "0002"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0004",
+    "title": "구간 헬퍼 + 입력 검증기",
+    "epic": "Epic 2. 데이터 계층",
+    "task": {
+      "description": "구간 판정 getStage, 다음 구간 잔여량 getNextStageGap, 공용 입력 검증기 assertBillInput 을 별도 파일로 구현하고 테스트를 붙인다. calculateBill 진입부에서 assertBillInput 을 호출하도록 한 줄 연결한다. RangeError 메시지는 SPEC 문자열과 정확히 일치해야 하며 console.error 를 쓰지 않는다.",
+      "acceptance_criteria": [
+        "getStage(200,3)=1, (201,3)=2, (400,3)=2, (401,3)=3 이고 하계는 (300,8)=1, (301,8)=2, (450,8)=2, (451,8)=3",
+        "getNextStageGap(180,3)===20, getNextStageGap(500,3)===0",
+        "assertBillInput 이 kWh<0 → RangeError('kWh must be 0 or greater'), NaN/비숫자 → 'kWh must be a number', month 범위 밖 → 'month must be 1-12', kWh>3000 → 'kWh must be 3000 or less' 를 정확한 메시지로 throw",
+        "calculateBill(3000,3) 은 throw 하지 않고 Number.isInteger(total) && total>0, 검증 테스트에서 console.error 스파이 호출 0회"
+      ]
+    },
+    "covers": [
+      "AC-1.3",
+      "AC-1.5",
+      "AC-1.6"
+    ],
+    "files": [
+      "src/domain/stage.ts",
+      "src/domain/validate.ts",
+      "src/domain/calculateBill.ts",
+      "src/domain/__tests__/stage.test.ts"
+    ],
+    "definition_of_done": [
+      "stage/validate 테스트 green",
+      "기존 calculateBill 픽스처 테스트도 계속 green"
+    ],
+    "depends_on": [
+      "0003"
+    ],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0005",
+    "title": "localStorage 저수준 래퍼 + 플래그 마이그레이션",
+    "epic": "Epic 2. 데이터 계층",
+    "task": {
+      "description": "모든 es:* 키 접근을 단일 래퍼로 통일한다. JSON 파싱 실패와 QuotaExceededError 를 예외 대신 결과 객체로 흡수해 페이지에서 try/catch 를 쓰지 않게 하고, 부팅 시 AppFlags 스키마 마이그레이션을 수행한다. console.error 는 어디서도 호출하지 않는다.",
+      "acceptance_criteria": [
+        "readJSON<T>(key, fallback) 이 정상 시 { ok:true, value } 를, 파싱 실패 시 해당 키를 fallback 으로 재초기화 저장하고 { ok:false, reason:'corrupt', value: fallback } 을 반환",
+        "writeJSON<T>(key, value) 가 setItem throw 시 { ok:false, reason:'quota' } 를 반환하고 재throw 하지 않음",
+        "removeKeys(keys) 와 getStorageBytes()(es: 접두 키의 key.length+value.length 합) 구현, getStorageBytes 1회 호출이 performance.now 측정 기준 5ms 미만",
+        "migrateFlags() 가 es:flags 부재/schemaVersion!==1 일 때 { schemaVersion:1, disclaimerSeenAt:null } 로 생성·갱신하고 es:records 건수는 전후 동일",
+        "테스트: '{{broken' 주입 후 readJSON 이 ok:false 반환 + 키가 fallback 값으로 리셋됨을 단정, console.error 스파이 0회"
+      ]
+    },
+    "covers": [
+      "AC-4.6",
+      "AC-8.4",
+      "AC-8.7",
+      "AC-3.5"
+    ],
+    "files": [
+      "src/lib/storage.ts",
+      "src/lib/__tests__/storage.test.ts"
+    ],
+    "definition_of_done": [
+      "storage 테스트 green",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [
+      "0001"
+    ],
+    "db_schema": "StorageKey = 'es:records'|'es:profile'|'es:appliances'|'es:report-unlocks'|'es:flags'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0006",
+    "title": "엔티티 CRUD 리포지토리 (records/profile/appliances/unlocks)",
+    "epic": "Epic 2. 데이터 계층",
+    "task": {
+      "description": "storage 래퍼 위에 엔티티별 CRUD와 SPEC 정리 정책(60건 상한, yearMonth 덮어쓰기, 가전 12건 제한, 열람권 24시간 만료)을 구현한다. React 의존 0, 모든 쓰기 함수는 writeJSON 결과를 그대로 반환해 호출부가 quota 를 알 수 있게 한다.",
+      "acceptance_criteria": [
+        "records: getRecords() 가 yearMonth 내림차순 반환, upsertRecord 가 동일 yearMonth 를 덮어써 건수 유지·값 갱신, deleteRecord(yearMonth) 동작, 61건째 저장 시 가장 오래된 1건 제거 후 60건 유지",
+        "profile: getProfile() 기본값 { regionCode:'11', householdSize:2 }, setProfile(patch) 부분 갱신 저장",
+        "appliances: 12건 상태에서 addAppliance 가 저장하지 않고 { ok:false, reason:'limit' } 반환, updateAppliance/removeAppliance 동작",
+        "unlocks: addUnlock(id, now) 의 expiresAt === now+86400000, pruneUnlocks(now) 가 만료분 제거, hasValidUnlock 이 만료 전 true·만료 후 false, 13건째 저장 시 unlockedAt 최소 항목 1건 선제거",
+        "vitest 리포지토리 테스트 전량 green"
+      ]
+    },
+    "covers": [
+      "AC-3.5",
+      "AC-4.6",
+      "AC-8.4"
+    ],
+    "files": [
+      "src/lib/records.ts",
+      "src/lib/profile.ts",
+      "src/lib/appliances.ts",
+      "src/lib/unlocks.ts",
+      "src/lib/__tests__/repos.test.ts"
+    ],
+    "definition_of_done": [
+      "4개 리포지토리 테스트 green",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [
+      "0005"
+    ],
+    "db_schema": "MeterRecord[]→'es:records'(max 60), UserProfile→'es:profile', ApplianceItem[]→'es:appliances'(max 12), ReportUnlock[]→'es:report-unlocks'(max 12, TTL 24h)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0007",
+    "title": "파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교)",
+    "epic": "Epic 2. 데이터 계층",
+    "task": {
+      "description": "페이지에서 분리된 파생 계산 순수 함수를 구현한다. 전년 동월 비교(증감 kWh·금액·퍼센트), 가전 절감 시뮬레이션(SimulationSummary 생성), 지역/가구원수 평균 대비 비율 계산을 UI 없이 단위 테스트 가능하게 만든다.",
+      "acceptance_criteria": [
+        "compareYoY(records, yearMonth) 가 전년 동월 기록 없을 때 null, 있을 때 { diffKWh, diffWon, diffPercent } 를 반환하며 diffPercent 는 소수 1자리 반올림",
+        "simulate(baseKWh, month, appliances) 가 가전별 월 절감 kWh = watt/1000*hoursPerDay*30*reduceRatio 합을 Math.round 해 savedKWh 로, targetKWh=max(0, baseKWh-savedKWh) 로 계산하고 baseTotal/targetTotal 을 calculateBill 로 산출해 savedWon=baseTotal-targetTotal 인 SimulationSummary 반환",
+        "가전 0건이면 savedKWh===0, targetTotal===baseTotal, savedWon===0",
+        "compareRegion(regionCode, householdSize, kWh) 가 regionAverage.json 에서 평균을 찾아 { avgKWh, diffKWh, ratioPercent } 를 반환하고 미등록 regionCode 는 '11' 폴백을 사용",
+        "vitest 파생 계산 테스트 전량 green, 함수 내 localStorage 접근 0건"
+      ]
+    },
+    "covers": [
+      "AC-5.2",
+      "AC-6.5",
+      "AC-7.1"
+    ],
+    "files": [
+      "src/domain/compare.ts",
+      "src/domain/simulate.ts",
+      "src/domain/__tests__/derive.test.ts"
+    ],
+    "definition_of_done": [
+      "파생 계산 테스트 green",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [
+      "0003"
+    ],
+    "db_schema": "SimulationSummary { baseKWh, savedKWh, targetKWh, baseTotal, targetTotal, savedWon, month, appliances }",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": ""
+  },
+  {
+    "id": "0008",
+    "title": "S1 홈 화면 — 사용량 입력 · 월 선택 · 예상치 고지 (/)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "앱 첫 화면. 검침 월 BottomSheet 선택과 kWh 입력을 받아 검증 후 /result 로 navigate 한다. 직전 기록이 있으면 help 텍스트로 안내하고, 7·8월 선택 시 하계 완화 Chip 을 노출하며, 최초 진입 시 예상치 고지 AlertDialog 를 1회 표시한다.",
+      "acceptance_criteria": [
+        "월 ListRow 탭 시 BottomSheet 가 열리고 1~12월 중 선택하면 ListRow bottom 텍스트가 'YYYY년 M월' 로 갱신되며 generateHapticFeedback({type:'tickWeak'}) 호출",
+        "month 가 7 또는 8일 때만 data-testid='summer-chip' 이 마운트되고 그 외 월에서는 DOM 에 존재하지 않음",
+        "kWh 가 빈값/0 이면 '사용량을 1kWh 이상 입력해주세요', 3000 초과면 '사용량은 3000kWh 이하로 입력해주세요', 소수면 '사용량은 정수로 입력해주세요', 숫자 외 문자면 '숫자만 입력해주세요' 가 TextField help 에 hasError 상태로 표시되고 navigate 는 호출되지 않음",
+        "검증 통과 시 generateHapticFeedback({type:'success'}) 후 navigate('/result', { state: { input: { yearMonth, kWh, month } } }) 가 ResultRouteState 타입으로 호출됨",
+        "es:flags.disclaimerSeenAt 이 null 이면 AlertDialog open, '확인' 탭 시 Date.now() 로 저장되고 새로고침 후 다시 뜨지 않음"
+      ]
+    },
+    "covers": [
+      "AC-2.1",
+      "AC-2.2",
+      "AC-2.3"
+    ],
+    "files": [
+      "src/pages/Home.tsx"
+    ],
+    "definition_of_done": [
+      "/ 진입 시 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "es:records(읽기 — 프리필), es:flags(읽기/쓰기 — disclaimerSeenAt)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: FixedBottomCTA (+ RadioDialog: 예상치 고지 AlertDialog)\nTDS whitelist: ScreenScaffold, Top, ListRow, TextField, Chip, Spacing, Paragraph, Button, AlertDialog, BottomSheet, Toast, SubmitFooter\n\nLayout:\n<ScreenScaffold>\n  <Top title={<Top.TitleParagraph>전기요금 계산</Top.TitleParagraph>} />\n  <ListRow onClick={openMonthSheet} contents={<ListRow.Texts type=\"2RowTypeA\" top=\"검침 월\" bottom=\"2026년 8월\" />} right={<Paragraph.Text typography=\"st11\" color=\"secondary\">변경</Paragraph.Text>} />\n  {isSummer && (<div style={{ display:'flex', gap:8, padding:'0 16px' }}><Chip data-testid=\"summer-chip\" label=\"하계 완화 요금 적용\" variant=\"filled\" selected /></div>)}\n  <TextField variant=\"box\" label=\"이번 달 사용량 (kWh)\" inputMode=\"numeric\" value={kWh} onChange={onChangeKWh} help={errorMsg ?? (lastRecord ? `지난달 ${lastRecord.kWh}kWh` : '첫 사용량을 입력해보세요')} hasError={!!errorMsg} />\n  <Spacing size={16} />\n  <Paragraph.Text typography=\"st12\" color=\"tertiary\">주택용 저압 기준으로 계산해요. 실제 청구액과 다를 수 있어요.</Paragraph.Text>\n  <SubmitFooter><Button data-testid=\"calc-submit\" variant=\"fill\" size=\"large\" display=\"block\">계산하기</Button></SubmitFooter>\n  <AlertDialog open={!flags.disclaimerSeenAt} title=\"잠깐만요\" description=\"이 계산 결과는 예상치예요. 실제 청구액은 한국전력 고지서를 확인해주세요.\" alertButton={<AlertDialog.AlertButton onClick={seenDisclaimer}>확인</AlertDialog.AlertButton>} onClose={seenDisclaimer} />\n  <BottomSheet open={monthSheetOpen} onClose={closeMonthSheet}>{MONTHS.map(m => <ListRow key={m} onClick={() => pickMonth(m)} contents={<ListRow.Texts type=\"1RowTypeA\" top={`${m}월`} />} />)}</BottomSheet>\n</ScreenScaffold>\n\nStates — Loading: 없음(localStorage 동기 읽기, 첫 프레임 완성 렌더). Empty: 기록 없음 → help='첫 사용량을 입력해보세요'. Error: TextField hasError + help 인라인 에러 4종.\nInteractions — 월 선택 시 tickWeak haptic, 7·8월에만 summer-chip, 제출 성공 시 success haptic 후 navigate('/result', { state: { input } }).\n색상 HEX 금지(var(--tds-color-*)), 여백은 Spacing(size 필수)만."
+  },
+  {
+    "id": "0009",
+    "title": "S2 결과 화면 렌더링 — 히어로·구간 카드·내역 카드 (/result)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "location.state 의 BillInput 으로 calculateBill 을 호출해 청구 예상 금액 히어로, 누진 구간별 MiniBar+ListRow 카드, 6행 요금 내역 카드를 렌더한다. 다음 구간까지 남은 kWh Chip 과 예상치 고지 문구를 포함하고 하단 CTA 로 /simulate 로 이동한다.",
+      "acceptance_criteria": [
+        "state.input=(350,8) 일 때 data-testid='bill-hero' 에 60,510원과 caption '350kWh · 하계 완화 요금 적용' 이, (350,3) 일 때 71,260원이 표시됨",
+        "data-testid='stage-card' 안에 stageBreakdown 길이만큼 ListRow 가 렌더되고 각 행이 'N구간' / 'XkWh · Y원/kWh' / 금액을 표시함",
+        "data-testid='next-stage-hint' Chip 이 gap>0 이면 'N구간까지 XkWh 남았어요', gap===0 이면 '이미 최고 구간이에요' 를 표시",
+        "data-testid='detail-card' 가 기본요금·전력량요금·기후환경요금·연료비조정액·부가가치세·전력산업기반기금 6행을 순서대로 렌더",
+        "하단 SubmitFooter 버튼 탭 시 navigate('/simulate', { state: { input } }) 가 SimulateRouteState 타입으로 호출됨"
+      ]
+    },
+    "covers": [
+      "AC-3.1",
+      "AC-3.2",
+      "AC-3.3"
+    ],
+    "files": [
+      "src/pages/Result.tsx"
+    ],
+    "definition_of_done": [
+      "/result 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell + StatusPanel (Hero Summary Card + 카드 위계)\nTDS whitelist: ScreenScaffold, Top, SummaryHero, Amount, Card, MiniBar, ListRow, Chip, Paragraph, Spacing, Button, SubmitFooter, Toast, AdSlot, Skeleton\n\nLayout:\n<ScreenScaffold>\n  <Top title={<Top.TitleParagraph>2026년 8월 요금</Top.TitleParagraph>} />\n  {calculating ? <Skeleton data-testid=\"bill-hero\" height={112} /> : <SummaryHero data-testid=\"bill-hero\" label=\"청구 예상 금액\" value={<Amount value={60510} unit=\"원\" typography=\"t1\" countUp />} caption=\"350kWh · 하계 완화 요금 적용\" />}\n  <Card data-testid=\"stage-card\">\n    <Paragraph.Text typography=\"t4\">누진 구간별 사용량</Paragraph.Text>\n    <Spacing size={12} />\n    <MiniBar data-testid=\"stage-minibar\" segments={stageBreakdown} />\n    <Spacing size={12} />\n    {stageBreakdown.map(s => (<ListRow key={s.stage} contents={<ListRow.Texts type=\"2RowTypeA\" top={`${s.stage}구간`} bottom={`${s.kWh}kWh · ${s.unitPrice}원/kWh`} />} right={<Paragraph.Text typography=\"st9\">{won(s.charge)}</Paragraph.Text>} />))}\n    <Spacing size={12} />\n    <Chip data-testid=\"next-stage-hint\" variant=\"outlined\" label={gap > 0 ? `${stage+1}구간까지 ${gap}kWh 남았어요` : '이미 최고 구간이에요'} />\n  </Card>\n  <Spacing size={16} />\n  <Card data-testid=\"detail-card\">{DETAIL_ROWS.map(r => (<ListRow key={r.key} contents={<ListRow.Texts type=\"1RowTypeA\" top={r.label} />} right={<Paragraph.Text typography=\"st9\">{won(r.value)}</Paragraph.Text>} />))}</Card>\n  <Spacing size={16} />\n  <Paragraph.Text typography=\"st12\" color=\"tertiary\">이 금액은 주택용 저압 기준 예상치예요</Paragraph.Text>\n  <Spacing size={32} />\n  <SubmitFooter><Button variant=\"fill\" size=\"large\" display=\"block\" onClick={goSimulate}>절약 시뮬레이션</Button></SubmitFooter>\n  <Toast open={toastOpen} position=\"bottom\" onClose={closeToast} />\n</ScreenScaffold>\n\n※ AdSlot 삽입은 통합 패킷(0018)에서 처리하므로 이 패킷에서는 <Spacing size={16} /> 자리만 비워둔다.\nStates — Loading: Skeleton height={112}. Error: 계산 예외 시 Toast 안내. 색상 HEX 금지, 여백은 Spacing 만."
+  },
+  {
+    "id": "0010",
+    "title": "S2 결과 자동 저장 + state 가드",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "결과 화면 진입 시 계산 결과를 MeterRecord 로 upsert 저장하고, location.state 가 null 이면 홈으로 replace 이동하는 가드를 별도 훅으로 분리한다. 저장 실패(quota) 시 Toast 로 알리고 화면은 계속 렌더된다.",
+      "acceptance_criteria": [
+        "useResultGuard() 가 location.state 를 ResultRouteState 로 읽어 null 이면 navigate('/', { replace: true }) 를 1회 호출하고 렌더를 중단함",
+        "state 가 유효하면 { yearMonth, kWh, total, createdAt: Date.now() } 로 upsertRecord 가 마운트당 정확히 1회 호출되고 동일 yearMonth 재진입 시 records 건수가 늘지 않음",
+        "upsertRecord 가 { ok:false, reason:'quota' } 를 반환하면 '저장 공간이 부족해요' Toast 가 노출되고 화면은 계속 렌더됨(화이트스크린 없음)",
+        "훅 실행 중 console.error 호출 0건, try/catch 없이 결과 객체만으로 분기함"
+      ]
+    },
+    "covers": [
+      "AC-3.4",
+      "AC-3.5"
+    ],
+    "files": [
+      "src/hooks/useResultGuard.ts",
+      "src/hooks/useAutoSaveRecord.ts"
+    ],
+    "definition_of_done": [
+      "훅 단위 렌더 테스트 또는 수동 확인 후 tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "MeterRecord → 'es:records' (yearMonth PK, 덮어쓰기)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "UI 없음 — 훅만 제공. Toast 노출은 호출 페이지가 TDS Toast 로 처리하도록 { toastMessage } 를 반환한다. Toast 문구는 해요체('저장 공간이 부족해요')."
+  },
+  {
+    "id": "0011",
+    "title": "S3 검침 기록 화면 — 목록·삭제·빈 상태 (/history)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "저장된 MeterRecord 를 최신순 목록으로 보여주고 항목 삭제와 빈 상태를 처리한다. 각 행은 'YYYY년 M월', 사용량 kWh, 청구 예상 금액을 표시하며 삭제는 AlertDialog 확인 후 실행된다.",
+      "acceptance_criteria": [
+        "records 가 0건이면 Asset.ContentIcon + '아직 기록이 없어요' 텍스트 + '요금 계산하러 가기' TDS Button 빈 상태가 렌더되고 목록 ListRow 는 0개",
+        "records 가 N건이면 ListRow 가 yearMonth 내림차순으로 정확히 N개 렌더되고 각 행에 'YYYY년 M월' / 'XkWh' / '금액원' 이 표시됨",
+        "행의 삭제 액션 탭 → AlertDialog(왼쪽 버튼 '닫기', 오른쪽 '삭제') 표시, '삭제' 확정 시 deleteRecord 호출 후 해당 행이 즉시 사라지고 새로고침 후에도 복구되지 않음",
+        "목록 항목이 50건 이상일 때도 스크롤이 끊기지 않고 각 ListRow 터치 타깃 높이 56px 이상"
+      ]
+    },
+    "covers": [
+      "AC-4.1",
+      "AC-4.2",
+      "AC-4.6"
+    ],
+    "files": [
+      "src/pages/History.tsx"
+    ],
+    "definition_of_done": [
+      "/history 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "MeterRecord[] → 'es:records'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell + List (+ ConfirmDialog)\nTDS: ScreenScaffold, Top, ListRow, ListRow.Texts, Paragraph, Card, Spacing, Button, AlertDialog, Toast, Asset.ContentIcon\nLayout: <ScreenScaffold><Top title={<Top.TitleParagraph>검침 기록</Top.TitleParagraph>} /> → 기록 목록 ListRow(type=\"2RowTypeA\", top=`${year}년 ${month}월`, bottom=`${kWh}kWh`, right=<Paragraph.Text typography=\"st9\">{won(total)}</Paragraph.Text>) 반복 → <Spacing size={32} /> → 하단 여백(FloatingTabBar 자리 확보).\nEmpty: <Asset.ContentIcon> + Paragraph.Text '아직 기록이 없어요' + Button display=\"block\" '요금 계산하러 가기' → navigate('/').\n삭제: 행 우측 액션 또는 롱프레스 → AlertDialog(왼쪽 '닫기', 오른쪽 '삭제') → 삭제 후 Toast '기록을 지웠어요'.\n색상 HEX 금지, 여백은 Spacing(size 필수)만, ListRow 에 padding prop 사용 금지."
+  },
+  {
+    "id": "0012",
+    "title": "S3 전년 동월 비교 Chip + 추이 카드",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "기록 화면 상단에 최신 기록의 전년 동월 대비 증감 Chip 과 최근 12개월 사용량 추이 카드를 렌더하는 컴포넌트를 만든다. 전년 데이터가 없으면 비교 영역을 숨기고 안내 문구만 노출한다.",
+      "acceptance_criteria": [
+        "전년 동월 기록이 있으면 data-testid='yoy-chip' 이 '작년 같은 달보다 XkWh 늘었어요' 또는 '줄었어요' 를 부호에 맞게 표시하고, 증가 시 warning 톤·감소 시 success 톤 TDS 색 토큰을 사용",
+        "전년 동월 기록이 없으면 yoy-chip 이 DOM 에 없고 '작년 기록이 쌓이면 비교해드릴게요' 문구만 표시",
+        "추이 카드가 최근 12개월 중 존재하는 기록만 막대로 렌더하고 최대값 막대가 100% 폭을 차지함(고정 px width 금지, % 사용)",
+        "컴포넌트가 records 를 props 로만 받아 localStorage 를 직접 읽지 않음"
+      ]
+    },
+    "covers": [
+      "AC-4.3",
+      "AC-4.4"
+    ],
+    "files": [
+      "src/components/YoyCompareCard.tsx",
+      "src/components/TrendCard.tsx"
+    ],
+    "definition_of_done": [
+      "History 화면에서 조립 가능한 상태로 export",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS: Card, Chip, Paragraph.Text, Spacing, MiniBar(또는 flex 기반 막대 div)\nYoyCompareCard: <Card><Paragraph.Text typography=\"t4\">작년 같은 달과 비교</Paragraph.Text><Spacing size={12} /><Chip data-testid=\"yoy-chip\" variant=\"filled\" label={...} /></Card>\nTrendCard: <Card><Paragraph.Text typography=\"t4\">최근 12개월 추이</Paragraph.Text><Spacing size={12} /> flex 기반 막대 리스트(각 막대 height % 비례, 라벨은 st12 tertiary)</Card>\n막대 색은 var(--tds-color-*) 만 사용, HEX 금지. 여백은 Spacing 만."
+  },
+  {
+    "id": "0013",
+    "title": "S4 시뮬레이션 화면 — 히어로·비교 카드·구간 하락 배지 (/simulate)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "location.state 의 BillInput 과 저장된 가전 목록으로 절감 시뮬레이션 결과를 렌더한다. 절감 금액 히어로, 현재 vs 절감 후 비교 카드, 누진 구간 하락 시 배지를 표시하고 하단 CTA 로 /report 로 이동한다. state 가 null 이면 홈으로 replace.",
+      "acceptance_criteria": [
+        "location.state 가 null 이면 navigate('/', { replace: true }) 가 1회 호출되고 화면 본문은 렌더되지 않음",
+        "가전 0건이면 Asset.ContentIcon + '절약할 가전을 추가해보세요' 빈 상태와 '가전 추가' Button 이 표시되고 히어로 절감액은 0원",
+        "가전이 1건 이상이면 data-testid='save-hero' 에 savedWon 이 '월 X원 아껴요' 로, 비교 카드에 baseKWh/baseTotal 과 targetKWh/targetTotal 이 각각 표시됨",
+        "targetKWh 의 stage 가 baseKWh 의 stage 보다 낮으면 data-testid='stage-drop-badge' 가 'N구간 → M구간 내려가요' 로 마운트, 같으면 DOM 에 없음",
+        "하단 Button 탭 시 navigate('/report', { state: { summary } }) 가 ReportRouteState 타입으로 호출됨"
+      ]
+    },
+    "covers": [
+      "AC-5.1",
+      "AC-5.2",
+      "AC-5.3"
+    ],
+    "files": [
+      "src/pages/Simulate.tsx"
+    ],
+    "definition_of_done": [
+      "/simulate 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "ApplianceItem[] → 'es:appliances'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell + StatusPanel + FixedBottomCTA\nTDS: ScreenScaffold, Top, SummaryHero, Amount, Card, ListRow, Chip, Paragraph, Spacing, Button, SubmitFooter, Toast, Asset.ContentIcon\nLayout: <ScreenScaffold><Top title={<Top.TitleParagraph>절약 시뮬레이션</Top.TitleParagraph>} />\n <SummaryHero data-testid=\"save-hero\" label=\"이렇게 하면\" value={<Amount value={savedWon} unit=\"원\" typography=\"t1\" countUp />} caption={`월 ${savedKWh}kWh 절약`} />\n <Card data-testid=\"compare-card\"><ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top=\"지금\" bottom={`${baseKWh}kWh`} />} right={<Paragraph.Text typography=\"st9\">{won(baseTotal)}</Paragraph.Text>} /><ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top=\"절약하면\" bottom={`${targetKWh}kWh`} />} right={<Paragraph.Text typography=\"st9\">{won(targetTotal)}</Paragraph.Text>} />{stageDropped && <Chip data-testid=\"stage-drop-badge\" variant=\"filled\" selected label={`${baseStage}구간 → ${targetStage}구간 내려가요`} />}</Card>\n <Card data-testid=\"appliance-card\"> 가전 목록 ListRow(top=name, bottom=`${watt}W · 하루 ${hoursPerDay}시간 · ${reduceRatio*100}% 줄이기`) </Card>\n <SubmitFooter><Button variant=\"fill\" size=\"large\" display=\"block\">절약 팁 리포트 보기</Button></SubmitFooter></ScreenScaffold>\nEmpty: Asset.ContentIcon + '절약할 가전을 추가해보세요' + Button '가전 추가'. HEX 금지, Spacing 만 사용."
+  },
+  {
+    "id": "0014",
+    "title": "S4 가전 추가/편집 BottomSheet + 영속화",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "가전 카탈로그에서 선택해 추가하고 사용 시간·절감 비율을 편집·삭제하는 BottomSheet 컴포넌트를 만든다. 12건 상한 초과 시 저장 없이 Toast 로 알리고, 변경은 es:appliances 에 즉시 반영된다.",
+      "acceptance_criteria": [
+        "BottomSheet 열기 시 카탈로그 8종 이상이 ListRow 로 표시되고 항목 선택 시 addAppliance 호출 후 시트가 닫히며 목록에 1건 추가됨",
+        "이미 12건인 상태에서 추가 시도 시 목록 건수가 12로 유지되고 '가전은 12개까지 담을 수 있어요' Toast 가 노출됨",
+        "편집 모드에서 hoursPerDay 를 0.5 단위 Chip(0.5~24)으로, reduceRatio 를 10/20/30/50% Chip 으로 선택하면 updateAppliance 가 호출되고 새로고침 후에도 값이 유지됨",
+        "삭제 탭 시 removeAppliance 후 해당 항목이 즉시 사라지고, Chip 선택 시 generateHapticFeedback({ type: 'tickWeak' }) 호출"
+      ]
+    },
+    "covers": [
+      "AC-5.4",
+      "AC-5.5"
+    ],
+    "files": [
+      "src/components/ApplianceSheet.tsx",
+      "src/hooks/useAppliances.ts"
+    ],
+    "definition_of_done": [
+      "Simulate 화면에서 조립 가능한 상태로 export",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "ApplianceItem[] → 'es:appliances' (max 12)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS: BottomSheet, ListRow, ListRow.Texts, Chip, Button, Paragraph.Text, Spacing, Toast\n추가 시트: <BottomSheet open onClose>...카탈로그 ListRow(type=\"2RowTypeA\", top=name, bottom=`${watt}W`)... </BottomSheet>\n편집 시트: 사용 시간 Chip 그룹(0.5~24, 0.5 단위 스크롤 가능한 flex row), 절감 비율 Chip 그룹(10%/20%/30%/50%), 하단 Button display=\"block\" '저장', 텍스트 버튼 '삭제'.\nChip 선택 시 tickWeak haptic. 커스텀 CSS 는 Chip 가로 스크롤 flex 배치에만 허용. HEX 금지, Spacing(size 필수)만."
+  },
+  {
+    "id": "0015",
+    "title": "S5 리포트 본문 — 팁 카드 + state 가드 (/report)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "시뮬레이션 요약을 받아 가전별 절약 팁 3줄을 카드로 렌더한다. savingTips 고정 카탈로그에서만 문자열을 가져오며 AI 호출은 없다. location.state 가 null 이면 /simulate 로 replace 이동한다.",
+      "acceptance_criteria": [
+        "location.state 가 null 이면 navigate('/simulate', { replace: true }) 가 1회 호출되고 본문은 렌더되지 않음",
+        "summary.appliances 각 항목마다 Card 1개가 렌더되고 각 Card 안에 savingTips[id] 의 팁 3줄이 ListRow 로 정확히 3개 표시됨",
+        "각 Card 헤더에 가전 이름과 해당 가전의 월 절감 kWh·예상 절감액이 표시됨",
+        "화면 최하단에 '예상치예요. 실제 청구액은 한국전력 고지서를 확인해주세요' 고지 문구가 st12 tertiary 로 노출되고, 팁 문자열에 Math.random/Date 의존 로직 0건"
+      ]
+    },
+    "covers": [
+      "AC-6.1",
+      "AC-6.5"
+    ],
+    "files": [
+      "src/pages/Report.tsx"
+    ],
+    "definition_of_done": [
+      "/report 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell + Content Cards\nTDS: ScreenScaffold, Top, Card, ListRow, Paragraph.Text, Amount, Spacing, Chip, Button\nLayout: <ScreenScaffold><Top title={<Top.TitleParagraph>절약 팁 리포트</Top.TitleParagraph>} />\n {summary.appliances.map(a => (<Card key={a.id}><Paragraph.Text typography=\"t4\">{a.name}</Paragraph.Text><Spacing size={4} /><Paragraph.Text typography=\"st12\" color=\"secondary\">{`월 ${savedKWh}kWh · ${won(savedWon)} 절약`}</Paragraph.Text><Spacing size={12} />{savingTips[a.id].map(t => <ListRow key={t} contents={<ListRow.Texts type=\"1RowTypeA\" top={t} />} />)}</Card>))}\n <Spacing size={16} /> (AdSlot 자리 — 통합 패킷에서 삽입)\n <Paragraph.Text typography=\"st12\" color=\"tertiary\">예상치예요. 실제 청구액은 한국전력 고지서를 확인해주세요.</Paragraph.Text><Spacing size={32} /></ScreenScaffold>\nAI 고지 비적용(결정론적 계산). HEX 금지, Spacing 만."
+  },
+  {
+    "id": "0016",
+    "title": "S5 TossRewardAd 게이트 + 24시간 열람권",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "리포트 본문을 리워드 광고 게이트 뒤에 배치하는 래퍼 컴포넌트를 만든다. 유효한 열람권(24시간)이 있으면 광고 없이 바로 본문을 보여주고, 없으면 TossRewardAd 로 감싸 시청 후 열람권을 저장한다. 만료된 열람권은 진입 시 정리한다.",
+      "acceptance_criteria": [
+        "hasValidUnlock(applianceId, Date.now()) 가 true 면 TossRewardAd 를 거치지 않고 children 이 즉시 렌더됨",
+        "열람권이 없으면 <TossRewardAd slotId={import.meta.env.VITE_TOSS_AD_SLOT_ID}> 로 children 이 감싸지고, 광고 시청 완료 콜백에서 addUnlock 이 호출되어 expiresAt === unlockedAt + 86400000 로 저장됨",
+        "마운트 시 pruneUnlocks(Date.now()) 가 1회 실행되어 만료 항목이 es:report-unlocks 에서 제거됨",
+        "VITE_TOSS_AD_SLOT_ID 가 undefined 인 환경에서도 크래시 없이 children 을 렌더하고 콘솔 에러 0건"
+      ]
+    },
+    "covers": [
+      "AC-6.2",
+      "AC-6.3",
+      "AC-6.4"
+    ],
+    "files": [
+      "src/components/ReportGate.tsx",
+      "src/hooks/useReportUnlock.ts"
+    ],
+    "definition_of_done": [
+      "Report 화면에서 조립 가능한 상태로 export",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "ReportUnlock[] → 'es:report-unlocks' (TTL 86,400,000ms, max 12)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS: Card, Paragraph.Text, Button, Spacing, Asset.ContentIcon + 템플릿 제공 TossRewardAd\n잠금 상태 안내: <Card><Asset.ContentIcon /><Paragraph.Text typography=\"t4\">짧은 광고를 보면 리포트를 열어드려요</Paragraph.Text><Spacing size={8} /><Paragraph.Text typography=\"st12\" color=\"tertiary\">한 번 열면 24시간 동안 다시 볼 수 있어요</Paragraph.Text></Card>\n게이트는 최종 payoff 화면(리포트 본문)에만 적용. HEX 금지, Spacing 만."
+  },
+  {
+    "id": "0017",
+    "title": "S6 우리 동네 비교 — 지연 로더 + 히어로 (/region)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "regionAverage.json 을 동적 import 로 지연 로드해 사용자 지역·가구원수 평균과 내 사용량을 비교하는 히어로와 비교 카드를 렌더한다. 로딩 중에는 Skeleton, 기록이 없으면 빈 상태를 노출한다.",
+      "acceptance_criteria": [
+        "regionAverage.json 이 정적 import 가 아닌 await import() 로 로드되고 로드 전에는 히어로 자리에 Skeleton 이 표시됨",
+        "최신 기록이 없으면 Asset.ContentIcon + '먼저 사용량을 입력해주세요' + '계산하러 가기' Button 빈 상태가 렌더되고 비교 카드는 표시되지 않음",
+        "기록이 있으면 data-testid='region-hero' 에 '우리 동네 평균보다 X% 적게/많이 써요' 가 표시되고 비교 카드에 내 사용량 kWh 와 지역 평균 kWh 두 행이 표시됨",
+        "등록되지 않은 regionCode 인 경우 '11'(서울) 평균으로 폴백해 렌더되며 크래시하지 않음"
+      ]
+    },
+    "covers": [
+      "AC-7.1",
+      "AC-7.2"
+    ],
+    "files": [
+      "src/pages/Region.tsx"
+    ],
+    "definition_of_done": [
+      "/region 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "UserProfile → 'es:profile', MeterRecord[] → 'es:records'(읽기)",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell + StatusPanel\nTDS: ScreenScaffold, Top, SummaryHero, Amount, Card, ListRow, Paragraph.Text, Chip, Spacing, Button, Skeleton, Asset.ContentIcon\nLayout: <ScreenScaffold><Top title={<Top.TitleParagraph>우리 동네 비교</Top.TitleParagraph>} />\n {loading ? <Skeleton data-testid=\"region-hero\" height={112} /> : <SummaryHero data-testid=\"region-hero\" label={`${regionName} ${householdSize}인 가구 평균 대비`} value={<Amount value={Math.abs(ratioPercent)} unit=\"%\" typography=\"t1\" />} caption={diffKWh < 0 ? '평균보다 적게 써요' : '평균보다 많이 써요'} />}\n <Card data-testid=\"region-compare-card\"><ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top=\"내 사용량\" bottom={`${myKWh}kWh`} />} /><ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top=\"동네 평균\" bottom={`${avgKWh}kWh`} />} /></Card>\n <Spacing size={32} /></ScreenScaffold>\nEmpty: Asset.ContentIcon + '먼저 사용량을 입력해주세요' + Button '계산하러 가기'. HEX 금지, Spacing 만."
+  },
+  {
+    "id": "0018",
+    "title": "S6 프로필 BottomSheet (지역·가구원수)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "지역(17개 시도)과 가구원수(1~4인 이상)를 선택하는 BottomSheet 컴포넌트를 만든다. 선택 즉시 es:profile 에 저장되고 비교 화면이 재계산되도록 변경 콜백을 노출한다.",
+      "acceptance_criteria": [
+        "지역 시트가 regionAverage 데이터의 17개 시도를 ListRow 로 표시하고 선택 시 setProfile({ regionCode }) 호출 후 시트가 닫힘",
+        "가구원수 Chip 4개(1인/2인/3인/4인 이상)가 렌더되고 선택 시 setProfile({ householdSize }) 가 1|2|3|4 값으로 호출됨",
+        "선택 직후 onChange 콜백이 최신 UserProfile 로 호출되고 새로고침 후에도 선택값이 유지됨",
+        "Chip/ListRow 선택 시 generateHapticFeedback({ type: 'tickWeak' }) 호출, 모든 항목 터치 타깃 44px 이상"
+      ]
+    },
+    "covers": [
+      "AC-7.3",
+      "AC-7.4"
+    ],
+    "files": [
+      "src/components/ProfileSheet.tsx",
+      "src/hooks/useProfile.ts"
+    ],
+    "definition_of_done": [
+      "Region/Settings 화면에서 조립 가능한 상태로 export",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "UserProfile { regionCode: string; householdSize: 1|2|3|4 } → 'es:profile'",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "TDS: BottomSheet, ListRow, ListRow.Texts, Chip, Paragraph.Text, Spacing, Button\nLayout: <BottomSheet open onClose><Paragraph.Text typography=\"t4\">우리 집 정보</Paragraph.Text><Spacing size={12} /> 가구원수 Chip row(1인/2인/3인/4인 이상) <Spacing size={16} /> 지역 ListRow 17개 리스트 <Button display=\"block\">저장</Button></BottomSheet>\nChip 가로 배치에만 flex 커스텀 CSS 허용. HEX 금지, Spacing(size 필수)만."
+  },
+  {
+    "id": "0019",
+    "title": "S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/settings)",
+    "epic": "Epic 3. 페이지",
+    "task": {
+      "description": "프로필 확인·변경 진입, 저장 용량 표시, 전체 데이터 삭제, 서비스 고지 문구를 담은 설정 화면을 만든다. 삭제는 AlertDialog 확인 후 실행되며 외부 앱 설치 유도나 서비스와 무관한 외부 링크는 포함하지 않는다.",
+      "acceptance_criteria": [
+        "'우리 집 정보' ListRow 가 현재 regionName 과 'N인 가구' 를 bottom 에 표시하고 탭 시 프로필 BottomSheet 가 열림",
+        "'저장 공간' ListRow 가 getStorageBytes() 결과를 'X KB' 로 표시하고 값이 0 이상 정수 KB 로 렌더됨",
+        "'모든 데이터 삭제' 탭 → AlertDialog(왼쪽 '닫기', 오른쪽 '삭제') → 확정 시 removeKeys 로 es:* 5개 키가 모두 제거되고 Toast '데이터를 모두 지웠어요' 노출 후 목록/용량 표시가 즉시 갱신됨",
+        "화면 하단에 '주택용 저압 기준 예상치예요' 고지와 앱 버전이 st12 tertiary 로 표시되고, 외부 앱 설치 유도 문구·다운로드 링크가 DOM 에 0건"
+      ]
+    },
+    "covers": [
+      "AC-8.1",
+      "AC-8.2",
+      "AC-8.4"
+    ],
+    "files": [
+      "src/pages/Settings.tsx"
+    ],
+    "definition_of_done": [
+      "/settings 렌더 에러 0건",
+      "tsc --noEmit 통과"
+    ],
+    "depends_on": [],
+    "db_schema": "es:records/es:profile/es:appliances/es:report-unlocks/es:flags 전체 삭제",
+    "api_contract": "",
+    "dependencies": [],
+    "ui_requirements": "Pattern: PageShell + List (+ ConfirmDialog)\nTDS: ScreenScaffold, Top, ListRow, ListRow.Texts, Paragraph.Text, Spacing, AlertDialog, BottomSheet, Toast, Button\nLayout: <ScreenScaffold><Top title={<Top.TitleParagraph>설정</Top.TitleParagraph>} />\n <ListRow onClick={openProfileSheet} contents={<ListRow.Texts type=\"2RowTypeA\" top=\"우리 집 정보\" bottom={`${regionName} · ${householdSize}인 가구`} />} right={<Paragraph.Text typography=\"st11\" color=\"secondary\">변경</Paragraph.Text>} />\n <ListRow contents={<ListRow.Texts type=\"2RowTypeA\" top=\"저장 공간\" bottom={`${kb} KB 사용 중`} />} />\n <ListRow onClick={confirmClear} contents={<ListRow.Texts type=\"1RowTypeA\" top=\"모든 데이터 삭제\" />} />\n <Spacing size={24} /><Paragraph.Text typography=\"st12\" color=\"tertiary\">주택용 저압 기준 예상치예요 · v1.0.0</Paragraph.Text><Spacing size={32} /></ScreenScaffold>\nAlertDialog 왼쪽 버튼은 반드시 '닫기'. 해요체 유지. HEX 금지, Spacing 만."
+  },
+  {
+    "id": "0020",
+    "title": "라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유)",
+    "epic": "4",
+    "task": {
+      "description": "App.tsx 에서 7개 화면 라우트를 연결하고 FloatingTabBar(홈/기록/시뮬레이션/설정 4탭)를 배치하며 부팅 시 migrateFlags 를 1회 실행한다. 이 패킷이 App.tsx 를 단독 소유하며 main.tsx 는 수정하지 않는다.",
+      "acceptance_criteria": [
+        "/, /result, /history, /simulate, /report, /region, /settings 7개 Route 가 react-router-dom 으로 정의되고 각 경로 직접 진입 시 화이트스크린 없이 해당 화면 또는 폴백 replace 이동이 발생함",
+        "FloatingTabBar 가 홈·기록·시뮬레이션·설정 4탭으로 렌더되고 현재 경로 탭이 컬러 틴트로 활성화되며, /result·/report 등 상세 화면에서는 탭바가 겹쳐 콘텐츠를 가리지 않음(하단 paddingBottom: calc(Npx + env(safe-area-inset-bottom)) 적용)",
+        "앱 부팅 시 migrateFlags() 가 정확히 1회 호출되고 es:records 건수는 부팅 전후 동일함",
+        "src/main.tsx 는 diff 0줄이며 App.tsx 를 files 에 포함한 패킷은 전체에서 이 패킷 1개뿐임",
+        "npm run build 성공, 콘솔 에러 0건"
+      ]
+    },
+    "covers": [
+      "AC-8.5",
+      "AC-8.6"
+    ],
+    "files": [
+      "src/App.tsx",
+      "src/components/FloatingTabBar.tsx"
+    ],
+    "definition_of_done": [
+      "npm run build 성공",
+      "7개 경로 순회 시 렌더 에러 0건"
+    ],
+    "depends_on": [],
+    "db_schema": "",
+    "api_contract": "",
+    "dependencies": [
+      "react-router-dom"
+    ],
+    "ui_requirements": "TDS + 템플릿 FloatingTabBar. 탭 구성: 홈(/) · 기록(/history) · 절약(/simulate) · 설정(/settings) 4탭, 활성 탭은 컬러 틴트. TDS 에 TabBar 는 없으므로 반드시 템플릿 제공 FloatingTabBar 사용.\nposition: fixed 하단 요소에 paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' 필수. HEX 금지 — var(--tds-color-*) 만. 모든 화면은 ScreenScaffold 로 감싸져 있어야 하며 raw div 골격 금지."
+  }
+]
