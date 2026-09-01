@@ -1,0 +1,23 @@
+{
+  "koreanName": "전기요금계산",
+  "englishName": "ElectricSaver",
+  "appName": "electric-saver",
+  "ageRating": "전체",
+  "supportEmail": "support@aifactory.dev",
+  "category": {
+    "primary": "생활",
+    "secondary": "요금관리"
+  },
+  "subtitle": "누진세 요금 3초 계산",
+  "description": "월 사용량(kWh)을 입력하면 복잡한 누진세 구간을 자동으로 계산하고 예상 요금을 확인합니다. 냉장고, 에어컨, 세탁기 등 가전제품별 절약 시뮬레이션을 통해 다음 달에 얼마나 전기비를 낮출 수 있는지 미리 확인하세요. 전년 동월과의 요금 비교, 우리 동네 평균 사용량 조회, 여름철 한시 완화 요금 자동 반영",
+  "searchKeywords": [
+    "전기요금",
+    "누진세",
+    "요금계산",
+    "전기절약",
+    "한전",
+    "가전제품절약",
+    "여름철요금",
+    "요금비교"
+  ]
+}
