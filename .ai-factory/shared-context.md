@@ -138,9 +138,13 @@ export interface AppFlags {
     useResultGuard.ts
   lib/
     __tests__/
+    appliances.ts
     contract.ts
+    profile.ts
+    records.ts
     storage.ts
     types.ts
+    unlocks.ts
     utils.ts
   main.tsx
   pages/
@@ -162,9 +166,13 @@ export interface AppFlags {
   vite-env.d.ts
 
 ### Exports (src/lib/)
+- appliances.ts: export type AddApplianceResult =; export function getAppliances(): ApplianceItem[]; export function addAppliance(appliance: ApplianceItem): AddApplianceResult; export function updateAppliance(id: string, patch: Partial<ApplianceItem>); export function removeAppliance(id: string)
 - contract.ts: export type BillRecord =; export type Profile =; export type Appliance =; export type RouteState =; export type RateTable =; export type calculateBillFn = (usageKwh: number, profile: Profile, rate: RateTable) =>; export type validateUsageFn = (value: string | number) =>; export type regionAverages =
+- profile.ts: export function getProfile(): UserProfile; export function setProfile(patch: Partial<UserProfile>)
+- records.ts: export function getRecords(): MeterRecord[]; export function upsertRecord(record: MeterRecord); export function deleteRecord(yearMonth: string)
 - storage.ts: export function readJSON<T>(key: string, fallback: T): ReadResult<T>; export function writeJSON<T>(key: string, value: T): WriteResult; export function removeKeys(keys: string[]): void; export function getStorageBytes(): number; export function migrateFlags(): void; export function upsertRecord(record: MeterRecord): WriteResult; export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void
 - types.ts: export interface StageBreakdown; export interface BillBreakdown; export interface AppFlags
+- unlocks.ts: export function getUnlocks(): ReportUnlock[]; export function addUnlock(id: string, now: number); export function pruneUnlocks(now: number); export function hasValidUnlock(id: string, now: number): boolean
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -189,6 +197,10 @@ export interface AppFlags {
 - YoyCompareCard.tsx: YoyCompareCard
 
 ### Module Dependencies (import graph)
+  lib/appliances.ts → imports: types/domain
+  lib/profile.ts → imports: types/domain
+  lib/records.ts → imports: types/domain
+  lib/unlocks.ts → imports: types/domain
   pages/Report.tsx → imports: components/ScreenScaffold, components/Card, data/savingTips, lib/utils, types/domain
   pages/Result.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/Card, components/MiniBar, components/BottomCTA, domain/calculateBill, domain/stage, domain/rateTable, lib/utils, lib/types, types/navigation
   pages/Settings.tsx → imports: components/ScreenScaffold, components/ProfileSheet, hooks/useProfile, lib/storage, data/regionAverage.json, types/domain
@@ -214,91 +226,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0019: S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/settings) (files: src/pages/Settings.tsx)
 - 0020: 라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유) (files: src/App.tsx, src/components/FloatingTabBar.tsx)
 - heal-1-01: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
-
-## TDD 상태
-⚠️ TDD 테스트 파일 자동 작성에 실패했습니다. 소스 코드를 작성하기 전에 `src/__tests__/packet-XXXX.test.ts` 파일에 AC 기반 테스트를 먼저 작성하세요 (TDD red phase). 테스트 작성 후 구현하세요.
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/ApplianceSheet.tsx
-export interface ApplianceSheetProps {
-export function ApplianceSheet({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ProfileSheet.tsx
-export interface ProfileSheetProps {
-export function ProfileSheet({ open, onClose, profile, setProfile, onChange }: ProfileSheetProps) {
-
-// src/components/ReportGate.tsx
-export function ReportGate({ applianceId, children }: ReportGateProps) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/components/TrendCard.tsx
-export function TrendCard({ records }: { records: MeterRecord[] }) {
-
-// src/components/YoyCompareCard.tsx
-export function YoyCompareCard({ records }: { records: MeterRecord[] }) {
-
-// src/data/applianceCatalog.ts
-export interface ApplianceCatalogItem {
-export const APPLIANCES: ApplianceCatalogItem[] = [
-
-// src/data/savingTips.ts
-export const SAVING_TIPS: Record<string, [string, str
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(1), general(9), testing(1), ui(1)
-
-Key lessons (verify against actual code before applying):
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 공용 기반 모듈(상수·저장소·계산 유틸)이 실제로 머지되기 전에는 이를 import하는 화면·훅 패킷을 머지하지 말고, 모든 머지 게이트에 타입체크와 프로덕션 빌드 통과(미해결 import 0건)를 필수로 걸어라. (60% · 타 앱 1회 — 맹신 금지)
+- heal-1-02: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
