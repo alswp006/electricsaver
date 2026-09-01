@@ -33,6 +33,11 @@ async function seed(page: Page): Promise<void> {
       "es:profile",
       JSON.stringify({ regionCode: "11", householdSize: 2 }),
     );
+    // 고지 다이얼로그를 본 상태로 — 안 하면 홈 스크린샷이 최초 1회 고지에 가려 화면 자체를 못 본다.
+    window.localStorage.setItem(
+      "es:flags",
+      JSON.stringify({ schemaVersion: 1, disclaimerSeenAt: 1690000000000 }),
+    );
   });
 }
 
@@ -77,3 +82,28 @@ for (const route of ROUTES) {
     await page.screenshot({ path: `e2e/__shots__/${route.name}.png`, fullPage: true });
   });
 }
+
+/**
+ * 핵심 흐름 — 홈에서 사용량을 넣고 계산하면 결과 화면이 뜬다.
+ * /result는 location.state로만 열려 주소 진입으로는 재현할 수 없다 → 실제 조작으로 확인한다.
+ */
+test("flow: 홈 → 요금 계산하기 → 결과 화면", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error" && !IGNORED_CONSOLE.some((re) => re.test(m.text()))) errors.push(m.text());
+  });
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  await seed(page);
+  await page.goto("/");
+  await page.getByTestId("kwh-input").fill("350");
+  await page.getByTestId("calc-submit").click();
+  await page.waitForTimeout(1000);
+
+  const rootText = (await page.locator("#root").innerText().catch(() => "")).trim();
+  expect(rootText.length, "결과 화면이 비어있음 → 흰 화면").toBeGreaterThan(0);
+  expect(rootText, "결과 화면에 예상 요금이 없음").toContain("원");
+  expect(errors, "결과 화면: 콘솔 에러").toEqual([]);
+
+  await page.screenshot({ path: "e2e/__shots__/flow-result.png", fullPage: true });
+});

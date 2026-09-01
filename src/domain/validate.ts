@@ -1,7 +1,14 @@
 import { MAX_KWH } from "./rateTable";
-import type { validateUsageFn } from "@/lib/contract";
 
-export const validateUsage: validateUsageFn = (value) => {
+/**
+ * 사용량 검증 결과. 계약(lib/contract)의 validateUsageKwhFn을 좁힌 형태로,
+ * 성공 시 정수로 정규화된 값(normalized)을 함께 돌려준다 — 화면은 이 값을 그대로 쓴다.
+ */
+export type UsageValidation =
+  | { valid: true; normalized: number }
+  | { valid: false; error: string };
+
+export const validateUsage = (value: string | number): UsageValidation => {
   const raw = typeof value === "number" ? String(value) : value.trim();
 
   if (raw === "") {
