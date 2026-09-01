@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { compareYoY } from "@/domain/compare";
-import { simulate } from "@/domain/simulate";
+import { simulate, type SimAppliance } from "@/domain/simulate";
 import { compareRegion } from "@/domain/compare";
 
 describe("packet 0007: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교)", () => {
@@ -61,7 +61,7 @@ describe("packet 0007: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비�
 
     it("AC-2: should calculate baseTotal and targetTotal via calculateBill", () => {
       const baseKWh = 500;
-      const appliances = [];
+      const appliances: SimAppliance[] = [];
       const result = simulate(baseKWh, 9, appliances);
       expect(result.baseTotal).toBeGreaterThan(0);
       expect(result.targetTotal).toBeGreaterThan(0);
