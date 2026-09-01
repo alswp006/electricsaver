@@ -215,6 +215,7 @@ export const STORAGE_KEYS = {
     __tests__/
     contract.ts
     recordStore.ts
+    regionAverage.ts
     safeStorage.ts
     settingsStore.ts
     simStore.ts
@@ -224,9 +225,12 @@ export const STORAGE_KEYS = {
     utils.ts
   main.tsx
   pages/
+    Compare.tsx
     History.tsx
     Home.tsx
+    Report.tsx
     Result.tsx
+    Simulate.tsx
     __TdsGallery.tsx
   styles/
     globals.css
@@ -237,6 +241,7 @@ export const STORAGE_KEYS = {
 ### Exports (src/lib/)
 - contract.ts: export type Bill =; export type DomainInput =; export type RouteState =; export type calcBillFn = (input: DomainInput) => Bill; export type roundToNearestFn = (value: number, unit?: number) => number; export type validateUsageFn = (value: number) =>; export type compareYoYFn = (currentMonth: Bill, previousYearMonth: Bill) =>; export type recordStoreFn =
 - recordStore.ts: export function listRecords(): UsageRecord[]; export function getLatestRecord(): UsageRecord | null; export type UpsertResult = WriteResult & UsageRecord; export function upsertRecord(rec: UsageRecord): UpsertResult; export function removeRecord(id: string): WriteResult; export function pruneRecords(): WriteResult; export const recordStore: recordStoreFn =
+- regionAverage.ts: export function listRegions(): RegionAverageEntry[]; export function getRegionAverage(regionCode: string, yearMonth: string): number | null
 - safeStorage.ts: export type WriteResult =; export function readJson<T = unknown>(key: string, fallback: T): any; export function writeJson<T = unknown>(key: string, value: T): WriteResult
 - settingsStore.ts: export function getSettings(): AppSettings; export function saveSettings(patch: Partial<AppSettings>): AppSettings
 - simStore.ts: export function getLastSim(): SimulationInput | null; export function saveSim(input: SimulationInput): SimulationInput
@@ -266,12 +271,14 @@ export const STORAGE_KEYS = {
 
 ### Module Dependencies (import graph)
   lib/recordStore.ts → imports: lib/types, lib/types, lib/safeStorage, lib/contract, domain/tariff
+  lib/regionAverage.ts → imports: lib/types, data/region-average.json
   lib/settingsStore.ts → imports: lib/types, lib/types, lib/safeStorage
   lib/simStore.ts → imports: lib/types, lib/types, lib/safeStorage
   lib/unlockStore.ts → imports: lib/types, lib/types, lib/safeStorage
+  pages/Compare.tsx → imports: components/ScreenScaffold, components/Card, components/MiniBar, components/StateView, components/AdSlot, components/FloatingTabBar, lib/recordStore, lib/settingsStore, lib/regionAverage, lib/types
   pages/History.tsx → imports: components/ScreenScaffold, components/Sparkline, components/StateView, components/AdSlot, components/FloatingTabBar, lib/recordStore, hooks/useQuotaToast, lib/types
   pages/Home.tsx → imports: components/ScreenScaffold, components/BottomCTA, components/AdSlot, components/StateView, lib/settingsStore, domain/validation, lib/types
-  pages/Result.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/MiniBar, components/YoYCard, components/BottomCTA, components/AdSlot, domain/calcBill, domain/compare, lib/recordStore, hooks/useQuotaToast, lib/types
+  pages/Report.tsx → imports: components/ScreenScaffold, components/ReportGate, components/SummaryHero, components/Amount, components/Card, components/BottomCTA, components/AdSlot, domain/simulate, domain/appliances, domain/t...
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -292,88 +299,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0015: 히스토리 화면 `/history` (files: src/pages/History.tsx)
 - 0016: 시뮬레이션 화면 `/simulate` (files: src/pages/Simulate.tsx)
 - 0017: 리포트 화면 `/report` (files: src/pages/Report.tsx)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/ApplianceStepperCard.tsx
-export function ApplianceStepperCard({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ReportGate.tsx
-export function ReportGate({ recordId, children }: ReportGateProps) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/components/YoYCard.tsx
-export function YoYCard({
-
-// src/domain/appliances.ts
-export const APPLIANCES: Appliance[] = [
-
-// src/domain/calcBill.ts
-export function calcBill(input: BillInput): BillBreakdown {
-
-// src/domain/compare.ts
-export function findYoY(records: UsageRecord[], yearMonth: string): UsageRecord | null {
-export function diffPercent(prev: number, curr: number): number {
-export function compareYoY(currentMonth: Bill, previousYearMonth: Bill): { delta: number; percent: number } {
-
-// src/domain/rounding.ts
-export function floor1(value: number): number {
-export function floor10(value: number): nu
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(1), general(10), testing(1), ui(1)
-
-Key lessons (verify against actual code before applying):
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)
+- 0018: 우리 동네 비교 화면 `/compare` (files: src/pages/Compare.tsx)
