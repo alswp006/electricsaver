@@ -46,9 +46,9 @@ describe("settingsStore · simStore · unlockStore (TDD red phase)", () => {
 
     it("AC-1[P0]: getSettings() returns saved value when it exists", () => {
       // Arrange: pre-populate settings
-      const saved = {
-        contractType: "high" as const,
-        regionCode: "KR-28" as const,
+      const saved: AppSettings = {
+        contractType: "high",
+        regionCode: "KR-28",
         householdSize: 4,
         lastYearMonth: "2026-08",
       };
@@ -66,9 +66,9 @@ describe("settingsStore · simStore · unlockStore (TDD red phase)", () => {
 
     it("AC-2[P0]: saveSettings() merges partial updates and preserves other fields", () => {
       // Arrange: set initial state with all fields
-      const initial = {
-        contractType: "low" as const,
-        regionCode: "KR-11" as const,
+      const initial: AppSettings = {
+        contractType: "low",
+        regionCode: "KR-11",
         householdSize: 2,
         lastYearMonth: "2026-07",
       };
@@ -87,9 +87,9 @@ describe("settingsStore · simStore · unlockStore (TDD red phase)", () => {
 
     it("AC-2[P0]: saveSettings() patch: update regionCode while preserving householdSize", () => {
       // Arrange
-      const initial = {
-        contractType: "low" as const,
-        regionCode: "KR-11" as const,
+      const initial: AppSettings = {
+        contractType: "low",
+        regionCode: "KR-11",
         householdSize: 3,
         lastYearMonth: null,
       };
