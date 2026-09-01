@@ -16,3 +16,9 @@ export interface BillBreakdown {
   stage: 1 | 2 | 3;
   stageBreakdown: StageBreakdown[];
 }
+
+// Storage types
+export interface AppFlags {
+  schemaVersion: 1;
+  disclaimerSeenAt: string | null;
+}
