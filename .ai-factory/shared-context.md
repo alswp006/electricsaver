@@ -13,59 +13,56 @@
  * 타입을 그대로 가정해도 된다. 추측이 어긋나 병합에서 무너지는 것을 막기 위한 파일이다.
  */
 
-/** 검침 기록 엔티티 (모든 패킷이 참조) (구현: 패킷 0001) */
-export type Record = { id: string; date: string; monthYear: string; usageKwh: number; billKrw: number; region: string; householdSize: number };
+export type Bill = { id: string; recordedAt: string; usageKwh: number; amountKrw: number; monthKey: MonthKey };
 
-/** 사용자 프로필 엔티티 (구현: 패킷 0001) */
-export type Profile = { region: string; householdSize: number; unlockCount: number };
+export type Profile = { id: string; region: string; memberCount: number; updatedAt: string };
 
-/** 가전 엔티티 (시뮬레이션/카탈로그에서 사용) (구현: 패킷 0001) */
-export type Appliance = { id: string; name: string; monthlyUsageKwh: number; unlocked: boolean };
+export type Appliance = { id: string; category: string; estimatedMonthlyKwh: number; isActive: boolean };
 
-/** 리포트 열람권 엔티티 (구현: 패킷 0001) */
-export type Unlock = { id: string; unlockedAt: string; expiresAt: string };
+export type RateStage = { min: number; max: number; unitPrice: number; rangeKwh: number; chargeKrw: number };
 
-/** 라우팅 상태 (App.tsx가 관리) (구현: 패킷 0001) */
-export type RouteState = { page: 'home' | 'result' | 'history' | 'simulate' | 'report' | 'region' | 'settings'; recordId?: string };
+export type MonthKey = string;
 
-/** 요금표 구간 (calculateBill이 사용) (구현: 패킷 0002) */
-export type RateSegment = { min: number; max: number; unitPriceKrw: number };
+export type RouteState = { pathname: "/" | "/result" | "/history" | "/simulate" | "/report" | "/region" | "/settings"; params?: Record<string, unknown> };
 
-/** 월별 요금 테이블 (구현: 패킷 0002) */
-export type RateTable = { season: 'summer' | 'winter' | 'other'; segments: RateSegment[]; basicFeeKrw: number };
+export type CalculateBillInput = { usageKwh: number; rateTable: RateTableRow[] };
 
-/** 가전 카탈로그 항목 (ApplianceSheet에서 참조) (구현: 패킷 0002) */
-export type ApplianceCatalogItem = { id: string; name: string; categoryKrw: string; avgMonthlyKwh: number; savingTips: string[] };
+export type CalculateBillResult = { totalKrw: number; breakdown: RateStage[] };
 
-/** 지역별 평균값 (Region 화면에서 사용) (구현: 패킷 0002) */
-export type RegionAverage = { region: string; avgMonthlyKwh: number; avgBillKrw: number };
+export type calculateBillFn = (input: CalculateBillInput) => CalculateBillResult;
 
-/** 계산된 요금 결과 (Result 렌더링에서 사용) (구현: 패킷 0003) */
-export type BillResult = { groundKwh: number; chargesBySegment: { segment: number; kwh: number; priceKrw: number }[]; basicFeeKrw: number; totalBillKrw: number; effectiveUnitPriceKrw: number };
+export type ValidateAmountResult = { isValid: boolean; error?: string };
 
-/** 핵심 계산 엔진 (0008, 0009, 0013에서 호출) (구현: 패킷 0003) */
-export type calculateBillFn = (usageKwh: number, monthYear: string, appliances: Appliance[]) => BillResult;
+export type validateAmountFn = (value: unknown) => ValidateAmountResult;
 
-/** 사용량 입력 검증 (구현: 패킷 0004) */
-export type validateUsageKwhFn = (usage: unknown) => { valid: boolean; error?: string };
+export type validateUsageKwhFn = (value: unknown) => ValidateAmountResult;
 
-/** 월 입력 검증 (구현: 패킷 0004) */
-export type validateMonthYearFn = (month: unknown) => { valid: boolean; error?: string };
+export type StorageResult = { ok: true; data: T } | { ok: false; error: string };
 
-/** 사용량에 해당하는 구간 인덱스 (Result/Simulate에서 배지 렌더링) (구현: 패킷 0004) */
-export type getStageIndexFn = (kwh: number, rateTable: RateTable) => number;
+export type getItemFn = <T>(key: string, schema?: object) => StorageResult<T>;
 
-/** 검침 기록 CRUD (0008, 0010, 0011이 사용) (구현: 패킷 0006) */
-export type RecordRepository = { create(record: Omit<Record, 'id'>): { ok: true; id: string } | { ok: false; error: string }; list(): Record[]; delete(id: string): { ok: boolean } };
+export type setItemFn = <T>(key: string, value: T) => StorageResult<void>;
 
-/** 프로필 저장소 (0018, 0017에서 사용) (구현: 패킷 0006) */
-export type ProfileRepository = { get(): Profile; set(p: Partial<Profile>): { ok: boolean } };
+export type removeItemFn = (key: string) => StorageResult<void>;
 
-/** 가전 CRUD (0014, 0013에서 사용) (구현: 패킷 0006) */
-export type ApplianceRepository = { list(): Appliance[]; upsert(a: Appliance): { ok: boolean }; delete(id: string): { ok: boolean } };
+export type RecordsRepository = { create(bill: Omit<Bill, "id" | "recordedAt">): Promise<Bill>; getAll(): Promise<Bill[]>; getByMonth(monthKey: MonthKey): Promise<Bill | null>; delete(id: string): Promise<boolean> };
 
-/** 열람권 저장소 (0016에서 사용) (구현: 패킷 0006) */
-export type UnlockRepository = { list(): Unlock[]; add(unlockId: string): { ok: boolean }; isUnlocked(unlockId: 
+export type ProfileRepository = { get(): Promise<Profile | null>; upsert(data: Omit<Profile, "id" | "updatedAt">): Promise<Profile> };
+
+export type AppliancesRepository = { create(app: Omit<Appliance, "id">): Promise<Appliance>; getAll(): Promise<Appliance[]>; update(id: string, data: Partial<Appliance>): Promise<Appliance>; delete(id: string): Promise<boolean> };
+
+export type UnlocksRepository = { getReportUnlockTime(): Promise<string | null>; setReportUnlockTime(isoString: string): Promise<void> };
+
+export type YoyCompareResult = { currentMonthKrw: number; lastYearMonthKrw: number; ratioPercent: number };
+
+export type compareBillYoYFn = (currentBill: Bill, lastYearBill?: Bill) => YoyCompareResult;
+
+export type SimulateInput = { baseUsageKwh: number; appliances: Appliance[]; rateTable: RateTableRow[] };
+
+export type SimulateResult = { estimatedKrw: number; savedComparedToBase: number };
+
+export type simulateBillFn = (input: SimulateInput) => SimulateResult;
+
 ```
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
@@ -218,26 +215,9 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0002: 요금표 상수 + 정적 카탈로그 데이터 (files: src/domain/rateTable.ts, src/data/applianceCatalog.ts, src/data/savingTips.ts, src/data/regionAverage.json)
 - 0003: calculateBill 계산 엔진 + CP-6 픽스처 테스트 (files: src/domain/calculateBill.ts, src/domain/__tests__/calculateBill.test.ts)
 - 0004: 구간 헬퍼 + 입력 검증기 (files: src/domain/stage.ts, src/domain/validate.ts, src/domain/calculateBill.ts, src/domain/__tests__/stage.test.ts)
+- 0005: localStorage 저수준 래퍼 + 플래그 마이그레이션 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
 - 0007: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교) (files: src/domain/compare.ts, src/domain/simulate.ts, src/domain/__tests__/derive.test.ts)
-- 0009: S2 결과 화면 렌더링 — 히어로·구간 카드·내역 카드 (/result) (files: src/pages/Result.tsx)
-- 0010: S2 결과 자동 저장 + state 가드 (files: src/hooks/useResultGuard.ts, src/hooks/useAutoSaveRecord.ts)
-- 0011: S3 검침 기록 화면 — 목록·삭제·빈 상태 (/history) (files: src/pages/History.tsx)
-- 0012: S3 전년 동월 비교 Chip + 추이 카드 (files: src/components/YoyCompareCard.tsx, src/components/TrendCard.tsx)
-- 0013: S4 시뮬레이션 화면 — 히어로·비교 카드·구간 하락 배지 (/simulate) (files: src/pages/Simulate.tsx)
-- 0014: S4 가전 추가/편집 BottomSheet + 영속화 (files: src/components/ApplianceSheet.tsx, src/hooks/useAppliances.ts)
-- 0015: S5 리포트 본문 — 팁 카드 + state 가드 (/report) (files: src/pages/Report.tsx)
-- 0016: S5 TossRewardAd 게이트 + 24시간 열람권 (files: src/components/ReportGate.tsx, src/hooks/useReportUnlock.ts)
-- 0017: S6 우리 동네 비교 — 지연 로더 + 히어로 (/region) (files: src/pages/Region.tsx)
-- 0018: S6 프로필 BottomSheet (지역·가구원수) (files: src/components/ProfileSheet.tsx, src/hooks/useProfile.ts)
-- 0019: S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/settings) (files: src/pages/Settings.tsx)
-- 0020: 라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유) (files: src/App.tsx, src/components/FloatingTabBar.tsx)
-- heal-1-01: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
-- heal-1-02: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
-- 0001: 엔티티 타입 + RouteState 계약 정의 (files: src/types/domain.ts, src/types/navigation.ts, src/types/storage.ts)
-- 0002: 요금표 상수 + 정적 카탈로그 데이터 (files: src/domain/rateTable.ts, src/data/applianceCatalog.ts, src/data/savingTips.ts, src/data/regionAverage.json)
-- 0003: calculateBill 계산 엔진 + CP-6 픽스처 테스트 (files: src/domain/calculateBill.ts, src/domain/__tests__/calculateBill.test.ts)
-- 0004: 구간 헬퍼 + 입력 검증기 (files: src/domain/stage.ts, src/domain/validate.ts, src/domain/calculateBill.ts, src/domain/__tests__/stage.test.ts)
-- 0007: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교) (files: src/domain/compare.ts, src/domain/simulate.ts, src/domain/__tests__/derive.test.ts)
+- 0008: S1 홈 화면 — 사용량 입력 · 월 선택 · 예상치 고지 (/) (files: src/pages/HomeInput.tsx, src/pages/HomeData.tsx)
 - 0009: S2 결과 화면 렌더링 — 히어로·구간 카드·내역 카드 (/result) (files: src/pages/Result.tsx)
 - 0010: S2 결과 자동 저장 + state 가드 (files: src/hooks/useResultGuard.ts, src/hooks/useAutoSaveRecord.ts)
 - 0011: S3 검침 기록 화면 — 목록·삭제·빈 상태 (/history) (files: src/pages/History.tsx)
@@ -253,89 +233,3 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - heal-1-01: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
 - heal-1-02: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
 - heal-1-03: 0008 홈 화면(/) 완성 — HomeInput/HomeData 분할 구현 및 전 라우트 스모크 복구 (files: src/pages/HomeInput.tsx, src/pages/HomeData.tsx, src/types/navigation.ts)
-- 0005: localStorage 저수준 래퍼 + 플래그 마이그레이션 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/ApplianceSheet.tsx
-export interface ApplianceSheetProps {
-export function ApplianceSheet({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ProfileSheet.tsx
-export interface ProfileSheetProps {
-export function ProfileSheet({ open, onClose, profile, setProfile, onChange }: ProfileSheetProps) {
-
-// src/components/ReportGate.tsx
-export function ReportGate({ applianceId, children }: ReportGateProps) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/components/TrendCard.tsx
-export function TrendCard({ records }: { records: MeterRecord[] }) {
-
-// src/components/YoyCompareCard.tsx
-export function YoyCompareCard({ records }: { records: MeterRecord[] }) {
-
-// src/data/applianceCatalog.ts
-export interface ApplianceCatalogItem {
-export const APPLIANCES: ApplianceCatalogItem[] = [
-
-// src/data/savingTips.ts
-export const SAVING_TIPS: Record<string, [string, str
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(1), general(10), testing(1), ui(1)
-
-Key lessons (verify against actual code before applying):
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 이 앱)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)

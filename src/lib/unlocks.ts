@@ -17,7 +17,19 @@ export function addUnlock(id: string, now: number) {
   const list = loadUnlocks();
   const rest = list.filter((u) => u.applianceId !== id);
   const next: ReportUnlock = { applianceId: id, unlockedAt: now, expiresAt: now + TTL_MS };
-  return writeJSON(KEY, [...rest, next]);
+  let final = [...rest, next];
+
+  // Maintain 12-item limit (max 12)
+  if (final.length > 12) {
+    // Find and remove the oldest (minimum unlockedAt)
+    const minIdx = final.reduce(
+      (minI, item, i) => (item.unlockedAt < final[minI].unlockedAt ? i : minI),
+      0
+    );
+    final = [...final.slice(0, minIdx), ...final.slice(minIdx + 1)];
+  }
+
+  return writeJSON(KEY, final);
 }
 
 export function pruneUnlocks(now: number) {
