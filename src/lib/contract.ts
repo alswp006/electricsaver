@@ -5,7 +5,7 @@
  * 타입을 그대로 가정해도 된다. 추측이 어긋나 병합에서 무너지는 것을 막기 위한 파일이다.
  */
 
-export type Record = { id: string; date: string; usageKwh: number; amountKrw: number; region?: string };
+export type UsageRecord = { id: string; date: string; usageKwh: number; amountKrw: number; region?: string };
 
 export type Appliance = { id: string; name: string; categoryId: string; estimatedKwhPerMonth?: number; color?: string };
 
@@ -23,9 +23,9 @@ export type calculateBillFn = (usageKwh: number, rate: RateTable) => BillBreakdo
 
 export type validateUsageFn = (value: string | number) => { valid: boolean; error?: string; normalized?: number };
 
-export type getRecordsFn = () => Record[];
+export type getRecordsFn = () => UsageRecord[];
 
-export type saveRecordFn = (record: Record) => void;
+export type saveRecordFn = (record: UsageRecord) => void;
 
 export type deleteRecordFn = (recordId: string) => void;
 
@@ -37,10 +37,10 @@ export type getAppliancesFn = () => Appliance[];
 
 export type setAppliancesFn = (appliances: Appliance[]) => void;
 
-export type compareYoYFn = (currentRecord: Record, previousYearRecord?: Record) => { percentChange: number; kwh: number; krw: number };
+export type compareYoYFn = (currentRecord: UsageRecord, previousYearRecord?: UsageRecord) => { percentChange: number; kwh: number; krw: number };
 
 export type canViewReportFn = () => boolean;
 
 export type unlockReportFn = () => void;
 
-export type useAutoSaveRecordFn = (record: Record | null) => void;
+export type useAutoSaveRecordFn = (record: UsageRecord | null) => void;
