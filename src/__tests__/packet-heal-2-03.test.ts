@@ -10,16 +10,24 @@
  * AC-3: localStorage.getItem/setItem이 throw해도 부팅이 성공한다
  * AC-4: import.meta.env.DEV가 꺼져 있어도(프로덕션 유사 환경) 부팅이 성공한다
  * AC-5: 전 라우트 연속 스윕이 예외 없이 통과한다(전체 스위트/빌드 통과를 대표하는 통합 검증)
+ * AC-6: /result·/simulate·/report는 가드 리다이렉트가 아니라, 유효한 location.state로
+ *   진입했을 때 실제 목적 화면(가드 우회 아님)이 렌더되고 콘솔 에러가 없다 — ReportGate가
+ *   미설정 env(VITE_TOSS_AD_SLOT_ID undefined)로 실제 렌더 경로를 타는 케이스도 겸한다.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import { mockAll } from "@/__tests__/__helpers__/mocks";
 import { renderWithRouter } from "@/__tests__/__helpers__/test-utils";
+import { simulate } from "@/domain/simulate";
+import type { BillInput } from "@/types/navigation";
 
 mockAll();
 
 import App from "@/App";
+
+const VALID_INPUT: BillInput = { yearMonth: "2026-08", kWh: 350, month: 8 };
+const VALID_SUMMARY = simulate(VALID_INPUT.kWh, VALID_INPUT.month, []);
 
 const BOOT_TIMEOUT_MS = 1000;
 
@@ -128,5 +136,33 @@ describe("부팅 스모크 회귀 테스트 — 루트 마운트 + 전 라우트
       expect(container.textContent!.length).toBeGreaterThan(0);
       unmount();
     }
+  });
+
+  it("AC-6: /result에 유효한 input state로 진입하면 홈으로 리다이렉트되지 않고 실제 결과 화면이 그려진다", async () => {
+    const { container } = renderWithRouter(React.createElement(App), {
+      initialEntries: [{ pathname: "/result", state: { input: VALID_INPUT } }],
+    });
+
+    await waitFor(() => expect(screen.getByTestId("bill-total")).toBeInTheDocument());
+    expect(screen.getByTestId("stage-card")).toBeInTheDocument();
+    expect(container.textContent).not.toContain("ElectricSaver");
+  });
+
+  it("AC-6: /simulate에 유효한 input state로 진입하면 홈으로 리다이렉트되지 않고 실제 시뮬레이션 화면이 그려진다", async () => {
+    const { container, getByTestId } = renderWithRouter(React.createElement(App), {
+      initialEntries: [{ pathname: "/simulate", state: { input: VALID_INPUT } }],
+    });
+
+    await waitFor(() => expect(getByTestId("save-hero")).toBeInTheDocument());
+    expect(container.textContent).not.toContain("ElectricSaver");
+  });
+
+  it("AC-6: /report에 유효한 summary state로 진입하면 홈/시뮬레이션으로 리다이렉트되지 않고 미설정 env(VITE_TOSS_AD_SLOT_ID undefined) 아래에서도 게이트 화면이 그려진다", async () => {
+    const { getByTestId } = renderWithRouter(React.createElement(App), {
+      initialEntries: [{ pathname: "/report", state: { summary: VALID_SUMMARY } }],
+    });
+
+    await waitFor(() => expect(getByTestId("saved-summary-hero")).toBeInTheDocument());
+    expect(getByTestId("report-gate")).toBeInTheDocument();
   });
 });
