@@ -225,7 +225,7 @@ describe("recordStore (list/upsert/remove/prune/latest)", () => {
 
       const records = listRecords();
       expect(records).toHaveLength(60);
-      expect(records[0].yearMonth).toBe("2026-01");
+      expect(records[0].yearMonth).toBe("2030-01");
       expect(records[records.length - 1].yearMonth).toBe("2025-02");
     });
 
