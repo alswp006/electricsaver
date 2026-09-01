@@ -36,10 +36,10 @@ export function ReportGate({ applianceId, children }: ReportGateProps) {
   const slotId = import.meta.env.VITE_TOSS_AD_SLOT_ID as string;
 
   return (
-    <div>
+    <div data-testid="report-gate">
       <Card>
         <Asset.ContentIcon name="iconRewardAd" alt="" />
-        <Paragraph.Text typography="t4">짧은 광고를 보면 리포트를 열어드려요</Paragraph.Text>
+        <Paragraph.Text typography="t4">짧은 광고를 보면 상세 절약 리포트를 볼 수 있어요</Paragraph.Text>
         <Spacing size={8} />
         <Paragraph.Text typography="st12" color="tertiary">
           한 번 열면 24시간 동안 다시 볼 수 있어요

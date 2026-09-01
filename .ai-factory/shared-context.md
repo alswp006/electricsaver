@@ -21,6 +21,8 @@ export type Appliance = { id: string; category: string; estimatedMonthlyKwh: num
 
 export type RateStage = { min: number; max: number; unitPrice: number; rangeKwh: number; chargeKrw: number };
 
+export type RateTableRow = RateStage;
+
 export type MonthKey = string;
 
 export type RouteState = { pathname: "/" | "/result" | "/history" | "/simulate" | "/report" | "/region" | "/settings"; params?: Record<string, unknown> };
@@ -37,7 +39,7 @@ export type validateAmountFn = (value: unknown) => ValidateAmountResult;
 
 export type validateUsageKwhFn = (value: unknown) => ValidateAmountResult;
 
-export type StorageResult = { ok: true; data: T } | { ok: false; error: string };
+export type StorageResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export type getItemFn = <T>(key: string, schema?: object) => StorageResult<T>;
 
@@ -168,7 +170,7 @@ export interface AppFlags {
 
 ### Exports (src/lib/)
 - appliances.ts: export type AddApplianceResult =; export function getAppliances(): ApplianceItem[]; export function addAppliance(appliance: ApplianceItem): AddApplianceResult; export function updateAppliance(id: string, patch: Partial<ApplianceItem>); export function removeAppliance(id: string)
-- contract.ts: export type Record =; export type Profile =; export type Appliance =; export type Unlock =; export type RouteState =; export type RateSegment =; export type RateTable =; export type ApplianceCatalogItem =
+- contract.ts: export type Bill =; export type Profile =; export type Appliance =; export type RateStage =; export type RateTableRow = RateStage; export type MonthKey = string; export type RouteState =; export type CalculateBillInput =
 - profile.ts: export function getProfile(): UserProfile; export function setProfile(patch: Partial<UserProfile>)
 - records.ts: export function getRecords(): MeterRecord[]; export function upsertRecord(record: MeterRecord); export function deleteRecord(yearMonth: string)
 - storage.ts: export function readJSON<T>(key: string, fallback: T): ReadResult<T>; export function writeJSON<T>(key: string, value: T): WriteResult; export function removeKeys(keys: string[]): void; export function getStorageBytes(): number; export function migrateFlags(): void; export function upsertRecord(record: MeterRecord): WriteResult; export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void
@@ -204,8 +206,8 @@ export interface AppFlags {
   lib/unlocks.ts → imports: types/domain
   pages/HomeData.tsx → imports: lib/records, lib/storage, domain/validate, types/domain, types/navigation
   pages/HomeInput.tsx → imports: components/ScreenScaffold, components/Card, components/SummaryHero, components/Amount, types/domain
-  pages/Report.tsx → imports: components/ScreenScaffold, components/Card, data/savingTips, lib/utils, types/domain
-  pages/Result.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/Card, components/MiniBar, components/BottomCTA, domain/calculateBill, domain/stage, domain/rateTable, lib/utils, lib/types, types/navigation
+  pages/Report.tsx → imports: components/ScreenScaffold, components/Card, components/SummaryHero, components/ReportGate, data/savingTips, lib/utils, types/domain
+  pages/Result.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/Card, components/MiniBar, components/BottomCTA, domain/calculateBill, domain/stage, domain/rateTable, lib/utils, lib/storage, lib/types, types/navigation
   pages/Settings.tsx → imports: components/ScreenScaffold, components/ProfileSheet, hooks/useProfile, lib/storage, data/regionAverage.json, types/domain
   pages/Simulate.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Card, components/StateView, components/BottomCTA, components/ApplianceSheet, hooks/useAppliances, domain/simulate, domain/stage, lib/utils, types/navigation
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
@@ -216,6 +218,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0003: calculateBill 계산 엔진 + CP-6 픽스처 테스트 (files: src/domain/calculateBill.ts, src/domain/__tests__/calculateBill.test.ts)
 - 0004: 구간 헬퍼 + 입력 검증기 (files: src/domain/stage.ts, src/domain/validate.ts, src/domain/calculateBill.ts, src/domain/__tests__/stage.test.ts)
 - 0005: localStorage 저수준 래퍼 + 플래그 마이그레이션 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
+- 0006: 엔티티 CRUD 리포지토리 (records/profile/appliances/unlocks) (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
 - 0007: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교) (files: src/domain/compare.ts, src/domain/simulate.ts, src/domain/__tests__/derive.test.ts)
 - 0008: S1 홈 화면 — 사용량 입력 · 월 선택 · 예상치 고지 (/) (files: src/pages/HomeInput.tsx, src/pages/HomeData.tsx)
 - 0009: S2 결과 화면 렌더링 — 히어로·구간 카드·내역 카드 (/result) (files: src/pages/Result.tsx)
@@ -233,88 +236,3 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - heal-1-01: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
 - heal-1-02: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
 - heal-1-03: 0008 홈 화면(/) 완성 — HomeInput/HomeData 분할 구현 및 전 라우트 스모크 복구 (files: src/pages/HomeInput.tsx, src/pages/HomeData.tsx, src/types/navigation.ts)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/ApplianceSheet.tsx
-export interface ApplianceSheetProps {
-export function ApplianceSheet({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ProfileSheet.tsx
-export interface ProfileSheetProps {
-export function ProfileSheet({ open, onClose, profile, setProfile, onChange }: ProfileSheetProps) {
-
-// src/components/ReportGate.tsx
-export function ReportGate({ applianceId, children }: ReportGateProps) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/components/TrendCard.tsx
-export function TrendCard({ records }: { records: MeterRecord[] }) {
-
-// src/components/YoyCompareCard.tsx
-export function YoyCompareCard({ records }: { records: MeterRecord[] }) {
-
-// src/data/applianceCatalog.ts
-export interface ApplianceCatalogItem {
-export const APPLIANCES: ApplianceCatalogItem[] = [
-
-// src/data/savingTips.ts
-export const SAVING_TIPS: Record<string, [string, str
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(1), general(10), testing(1), ui(1)
-
-Key lessons (verify against actual code before applying):
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 이 앱)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)

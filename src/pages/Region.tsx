@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Top, Spacing, ListRow, Button, Asset, Skeleton } from '@toss/tds-mobile';
+import { Top, Spacing, ListRow, Button, Asset, Skeleton, Paragraph } from '@toss/tds-mobile';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { SummaryHero } from '../components/SummaryHero';
 import { Amount } from '../components/Amount';
@@ -110,6 +110,10 @@ export default function Region() {
           </div>
         </Card>
       ) : null}
+
+      <Spacing size={16} />
+
+      <Paragraph.Text typography="st12">내 정보는 기기에만 저장돼요</Paragraph.Text>
 
       <Spacing size={32} />
     </ScreenScaffold>

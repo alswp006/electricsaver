@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Top, Paragraph, Spacing, ListRow } from "@toss/tds-mobile";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { Card } from "@/components/Card";
+import { SummaryHero } from "@/components/SummaryHero";
+import { ReportGate } from "@/components/ReportGate";
 import { SAVING_TIPS } from "@/data/savingTips";
 import { formatNumber } from "@/lib/utils";
 import type { SimulationSummary } from "@/types/domain";
@@ -44,6 +46,14 @@ export default function Report() {
 
   return (
     <ScreenScaffold top={top}>
+      <SummaryHero
+        testId="saved-summary-hero"
+        label="이번 달 절약 예상액"
+        value={<Paragraph.Text typography="t1">{won(summary.savedWon)}</Paragraph.Text>}
+        caption={`월 ${summary.savedKWh}kWh 절약`}
+      />
+      <Spacing size={16} />
+      <ReportGate applianceId="__report__">
       <div data-testid="report-body">
         {summary.appliances.map((appliance) => {
           const savedKWh = Math.round(
@@ -80,6 +90,7 @@ export default function Report() {
         </Paragraph.Text>
         <Spacing size={32} />
       </div>
+      </ReportGate>
     </ScreenScaffold>
   );
 }

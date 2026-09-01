@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Top, Paragraph, Spacing, ListRow, Chip, Toast } from "@toss/tds-mobile";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
@@ -11,6 +11,7 @@ import { calculateBill } from "@/domain/calculateBill";
 import { getNextStageGap } from "@/domain/stage";
 import { CLIMATE_RATE, FUEL_RATE } from "@/domain/rateTable";
 import { formatNumber } from "@/lib/utils";
+import { upsertRecord } from "@/lib/storage";
 import type { BillBreakdown } from "@/lib/types";
 import type { ResultRouteState, SimulateRouteState } from "@/types/navigation";
 
@@ -31,6 +32,7 @@ export default function Result() {
   const input = routeState?.input ?? null;
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const savedYearMonthRef = useRef<string | null>(null);
 
   const bill = useMemo<BillBreakdown | null>(() => {
     if (!input) return null;
@@ -50,6 +52,23 @@ export default function Result() {
       setErrorMessage("사용량을 다시 입력해 주세요");
     }
   }, [input, bill, navigate]);
+
+  // 결과 자동 저장(AC-3.2) — 같은 yearMonth 재진입 시 덮어쓰기, 저장 공간 부족 시 Toast만 띄우고 결과는 유지.
+  useEffect(() => {
+    if (!input || !bill) return;
+    if (savedYearMonthRef.current === input.yearMonth) return;
+    savedYearMonthRef.current = input.yearMonth;
+
+    const result = upsertRecord({
+      yearMonth: input.yearMonth,
+      kWh: input.kWh,
+      total: bill.total,
+      createdAt: Date.now(),
+    });
+    if (!result.ok) {
+      setErrorMessage("저장 공간이 부족해 기록을 남기지 못했어요");
+    }
+  }, [input, bill]);
 
   if (!input || !bill) {
     return (

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ScreenScaffold } from '../components/ScreenScaffold';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/StateView';
+import { YoyCompareCard } from '../components/YoyCompareCard';
 import { readJSON, writeJSON } from '../lib/storage';
 import type { MeterRecord } from '../types/domain';
 

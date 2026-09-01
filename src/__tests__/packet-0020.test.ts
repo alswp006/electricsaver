@@ -3,7 +3,7 @@
  *
  * AC-1: 7개 Route(/, /result, /history, /simulate, /report, /region, /settings) 배선,
  *       직접 진입 시 화이트스크린 없이 렌더 또는 폴백 replace 이동
- * AC-2: FloatingTabBar 4탭(홈/기록/시뮬레이션/설정), 현재 경로 활성화, 상세 화면에서는
+ * AC-2: FloatingTabBar 4탭(홈/기록/동네/설정), 현재 경로 활성화, 상세 화면에서는
  *       탭바가 콘텐츠를 가리지 않음(safe-area 포함 하단 spacer)
  * AC-3: 부팅 시 migrateFlags() 정확히 1회 호출, es:records 건수 전후 동일
  * AC-4: src/main.tsx diff 0줄 (ANCHOR 보존)
@@ -82,13 +82,13 @@ describe("라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 �
     expect(simulateContainer.textContent!.length).toBeGreaterThan(0);
   });
 
-  it("AC-2[P0]: FloatingTabBar는 홈·기록·시뮬레이션·설정 4탭이며, 현재 경로 탭만 aria-selected=true다", () => {
+  it("AC-2[P0]: FloatingTabBar는 홈·기록·동네·설정 4탭이며, 현재 경로 탭만 aria-selected=true다", () => {
     const { unmount } = renderWithRouter(React.createElement(App), { initialEntries: ["/"] });
 
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(4);
     const labels = tabs.map((t) => t.getAttribute("aria-label"));
-    expect(labels).toEqual(expect.arrayContaining(["홈", "기록", "시뮬레이션", "설정"]));
+    expect(labels).toEqual(expect.arrayContaining(["홈", "기록", "동네", "설정"]));
 
     const homeTab = tabs.find((t) => t.getAttribute("aria-label") === "홈")!;
     const historyTab = tabs.find((t) => t.getAttribute("aria-label") === "기록")!;

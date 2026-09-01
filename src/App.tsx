@@ -8,9 +8,7 @@ import Report from './pages/Report';
 import Region from './pages/Region';
 import Settings from './pages/Settings';
 import { FloatingTabBar, type TabItem } from './components/FloatingTabBar';
-import { migrateFlags, readJSON } from './lib/storage';
-import type { MeterRecord } from './types/domain';
-import type { SimulateRouteState } from './types/navigation';
+import { migrateFlags } from './lib/storage';
 
 // Dev-only TDS Gallery route — `import.meta.env.DEV` is statically replaced
 // (true in dev, false in prod) so the entire import + Route is tree-shaken
@@ -51,7 +49,7 @@ function TabIcon({ d }: { d: string }) {
 
 const ICON_HOME = 'M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z';
 const ICON_HISTORY = 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01';
-const ICON_SIMULATE = 'M13 3 5 14h6l-1 7 8-11h-6z';
+const ICON_REGION = 'M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z';
 const ICON_SETTINGS =
   'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-3-1.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.3-3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 3 1.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z';
 
@@ -66,27 +64,6 @@ function RequireRouteState({ field, children }: { field: string; children: React
   const value = state && typeof state === 'object' ? state[field] : undefined;
   if (value == null) return <Navigate to="/" replace />;
   return <>{children}</>;
-}
-
-/**
- * 시뮬레이션 탭은 계산 입력(location.state)이 있어야 열린다.
- * 마지막으로 저장된 검침 기록을 state로 실어 보내면, 탭을 눌렀을 때 홈으로 튕기지 않는다.
- * 기록이 하나도 없으면 undefined → Simulate가 홈으로 replace(입력부터 하라는 뜻).
- */
-function latestRecordState(): SimulateRouteState | undefined {
-  const { value } = readJSON<MeterRecord[]>('es:records', []);
-  const records = Array.isArray(value) ? value : [];
-  if (records.length === 0) return undefined;
-
-  const latest = records.reduce((a, b) => (b.createdAt >= a.createdAt ? b : a));
-  const month = Number(latest.yearMonth?.split('-')[1]);
-  return {
-    input: {
-      yearMonth: latest.yearMonth,
-      kWh: latest.kWh,
-      month: Number.isFinite(month) && month >= 1 && month <= 12 ? month : 1,
-    },
-  };
 }
 
 export default function App() {
@@ -109,12 +86,7 @@ export default function App() {
   const tabs: TabItem[] = [
     { label: '홈', path: '/', icon: <TabIcon d={ICON_HOME} /> },
     { label: '기록', path: '/history', icon: <TabIcon d={ICON_HISTORY} /> },
-    {
-      label: '시뮬레이션',
-      path: '/simulate',
-      icon: <TabIcon d={ICON_SIMULATE} />,
-      state: latestRecordState(),
-    },
+    { label: '동네', path: '/region', icon: <TabIcon d={ICON_REGION} /> },
     { label: '설정', path: '/settings', icon: <TabIcon d={ICON_SETTINGS} /> },
   ];
 
