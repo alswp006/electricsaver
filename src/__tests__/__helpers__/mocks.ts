@@ -303,6 +303,9 @@ export function mockTossRewardAd() {
 
 // ── react-router-dom ──
 // Preserve actual router + override useNavigate for assertion.
+// useLocation delegates to the real hook so `renderWithRouter(ui, { initialEntries: [{ state }] })`
+// (the RouteState testing pattern documented in .claude/rules/testing.md) reflects the actual
+// MemoryRouter location — a hardcoded static location.state would break that pattern entirely.
 export function mockRouter() {
   vi.mock("react-router-dom", async () => {
     const actual = await vi.importActual<typeof import("react-router-dom")>(
@@ -311,7 +314,7 @@ export function mockRouter() {
     return {
       ...actual,
       useNavigate: () => mockNavigate,
-      useLocation: () => mockLocation,
+      useLocation: () => actual.useLocation(),
     };
   });
 }

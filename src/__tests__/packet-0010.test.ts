@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, cleanup } from "@testing-library/react";
 import { renderWithRouter, mockAppState } from "@/__tests__/__helpers__/test-utils";
 import { mockAll, mockNavigate } from "@/__tests__/__helpers__/mocks";
 
@@ -23,8 +23,8 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
   describe("AC-1: useResultGuard() guards state (P0)", () => {
     it("AC-1a[P0]: should call navigate('/', { replace: true }) exactly once when location.state is null", async () => {
       // Test component using useResultGuard
+      const { useResultGuard } = await import("@/hooks/useResultGuard");
       const TestResultGuard = () => {
-        const { useResultGuard } = require("@/hooks/useResultGuard");
         useResultGuard();
         return React.createElement("div", { "data-testid": "guarded-content" }, "Protected");
       };
@@ -42,9 +42,12 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
     });
 
     it("AC-1b[P0]: should not render child content when state is null (render stops)", async () => {
+      const { useResultGuard } = await import("@/hooks/useResultGuard");
       const TestResultGuard = () => {
-        const { useResultGuard } = require("@/hooks/useResultGuard");
-        useResultGuard();
+        const guarded = useResultGuard();
+        // Consumer gates render on the hook's return value — a hook alone cannot
+        // stop a component's own render; this mirrors the intended real usage.
+        if (!guarded) return null;
         // This should not be rendered if guard navigates away
         return React.createElement("div", { "data-testid": "child-content" }, "Should Not Render");
       };
@@ -62,8 +65,8 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
     });
 
     it("AC-1c: should NOT navigate when state is valid ResultRouteState", async () => {
+      const { useResultGuard } = await import("@/hooks/useResultGuard");
       const TestResultGuard = () => {
-        const { useResultGuard } = require("@/hooks/useResultGuard");
         useResultGuard();
         return React.createElement("div", { "data-testid": "valid-result" }, "Valid Result Rendered");
       };
@@ -105,9 +108,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         return React.createElement("div", { "data-testid": "autosave-ready" }, "Ready");
       };
@@ -141,9 +145,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         return React.createElement("div", {}, "Ready");
       };
@@ -170,7 +175,7 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
         expect(call.yearMonth).toBe("2026-09");
         expect(call.kWh).toBe(250);
         expect(call.total).toBe(75000);
-        expect(call.createdAt).toBe(expect.any(Number));
+        expect(call.createdAt).toEqual(expect.any(Number));
       });
 
       vi.unmock("@/lib/storage");
@@ -186,9 +191,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         return React.createElement("div", {}, "AutoSave");
       };
@@ -240,9 +246,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         return React.createElement("div", { "data-testid": "result-display" }, "Result Data");
       };
@@ -274,9 +281,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         return React.createElement("div", { "data-testid": "result-content" }, "Result Page Continues");
       };
@@ -314,9 +322,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         return React.createElement("div", {}, "Safe");
       };
@@ -359,9 +368,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
         vi.doMock("@/lib/storage", () => ({
           upsertRecord: mockUpsertRecord,
         }));
+        vi.resetModules();
+        const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
         const TestAutoSave = () => {
-          const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
           useAutoSaveRecord();
           return React.createElement("div", {}, "Error handled");
         };
@@ -401,9 +411,10 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestAutoSave = () => {
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
         useAutoSaveRecord();
         // If hook throws, this won't render
         return React.createElement("div", { "data-testid": "executed" }, "Path executed without throw");
@@ -440,11 +451,11 @@ describe("S2 결과 자동 저장 + state 가드 [packet-0010]", () => {
       vi.doMock("@/lib/storage", () => ({
         upsertRecord: mockUpsertRecord,
       }));
+      vi.resetModules();
+      const { useResultGuard } = await import("@/hooks/useResultGuard");
+      const { useAutoSaveRecord } = await import("@/hooks/useAutoSaveRecord");
 
       const TestResultPage = () => {
-        const { useResultGuard } = require("@/hooks/useResultGuard");
-        const { useAutoSaveRecord } = require("@/hooks/useAutoSaveRecord");
-
         useResultGuard();
         useAutoSaveRecord();
 

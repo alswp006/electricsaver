@@ -1,4 +1,5 @@
 import type { AppFlags } from "./types";
+import type { MeterRecord } from "../types/domain";
 
 interface ReadResult<T> {
   ok: boolean;
@@ -81,6 +82,14 @@ export function migrateFlags(): void {
     // Corrupt, reset to default
     writeJSON("es:flags", fallback);
   }
+}
+
+export function upsertRecord(record: MeterRecord): WriteResult {
+  const { value: records } = readJSON<MeterRecord[]>("es:records", []);
+  const list = Array.isArray(records) ? records : [];
+  const idx = list.findIndex((r) => r.yearMonth === record.yearMonth);
+  const next = idx >= 0 ? [...list.slice(0, idx), record, ...list.slice(idx + 1)] : [...list, record];
+  return writeJSON("es:records", next);
 }
 
 // Legacy API (kept for backward compatibility)

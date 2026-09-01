@@ -10,16 +10,20 @@
  */
 
 import React, { type ReactElement } from "react";
-import { render, type RenderOptions } from "@testing-library/react";
+import { render, cleanup, type RenderOptions } from "@testing-library/react";
 import { MemoryRouter, type MemoryRouterProps } from "react-router-dom";
 import { vi } from "vitest";
 
 // ── Render with MemoryRouter ──
+// Cleans up any previously mounted tree first — repeated renderWithRouter() calls
+// within a single test (e.g. re-mount to assert re-entry behavior) otherwise leave
+// stale DOM behind, since RTL only auto-cleans between `it()` blocks, not within one.
 export function renderWithRouter(
   ui: ReactElement,
   routerOptions?: MemoryRouterProps,
   renderOptions?: Omit<RenderOptions, "wrapper">,
 ) {
+  cleanup();
   return render(ui, {
     wrapper: ({ children }) =>
       React.createElement(MemoryRouter, routerOptions, children),
