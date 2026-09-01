@@ -5,42 +5,53 @@
  * 타입을 그대로 가정해도 된다. 추측이 어긋나 병합에서 무너지는 것을 막기 위한 파일이다.
  */
 
-export type UsageRecord = { id: string; date: string; usageKwh: number; amountKrw: number; region?: string };
+/** 검침 기록 엔티티 (구현: 패킷 0001) */
+export type Record = { id: string; date: string; usageKwh: number; billKrw: number; memo?: string };
 
-export type Appliance = { id: string; name: string; categoryId: string; estimatedKwhPerMonth?: number; color?: string };
+/** 사용자 프로필 (구현: 패킷 0001) */
+export type Profile = { regionCode: string; householdCount: number; updated: string };
 
-export type Profile = { region: string; householdSize: number; lastUpdated?: string };
+/** 가전 엔티티 (구현: 패킷 0001) */
+export type Appliance = { id: string; name: string; category: string; powerW: number; monthlyHourEst: number };
 
-export type BillBreakdown = { totalKrw: number; stages: Array<{ from: number; to: number; rateKrw: number; usageKwh: number; costKrw: number }>; appliances?: Record<string, number> };
+/** 라우트 상태 (구현: 패킷 0001) */
+export type RouteState = { page: 'home'|'result'|'history'|'simulate'|'report'|'region'|'settings'; params?: Record<string, any> };
 
-export type Unlock = { reportViewable: boolean; lastRewardAdAt?: string; monthlyViewCount: number };
+/** 요금 구간 테이블 (구현: 패킷 0002) */
+export type RateTable = { name: string; stages: Array<{ upperKwh: number; unitKrw: number }> };
 
-export type RateTable = { year: number; region: string; stages: Array<{ from: number; to: number; rateKrw: number }> };
+/** 월 요금 계산 엔진 (구현: 패킷 0003) */
+export type calculateBillFn = (usageKwh: number, profile: Profile, rate: RateTable) => { baseKrw: number; discountKrw: number; totalKrw: number };
 
-export type RouteState = { view: 'home' | 'result' | 'history' | 'simulate' | 'report' | 'region' | 'settings'; queryParams?: Record<string, string> };
+/** 사용량 입력 검증 (구현: 패킷 0004) */
+export type validateUsageFn = (value: string) => { valid: boolean; error?: string };
 
-export type calculateBillFn = (usageKwh: number, rate: RateTable) => BillBreakdown;
+/** 지역별 평균 사용량·요금 (상수) (구현: 패킷 0002) */
+export type regionAverages = { [key: string]: { avgKwh: number; avgKrw: number } };
 
-export type validateUsageFn = (value: string | number) => { valid: boolean; error?: string; normalized?: number };
+/** 가전 카탈로그 (상수) (구현: 패킷 0002) */
+export type applianceCatalog = Appliance[];
 
-export type getRecordsFn = () => UsageRecord[];
+/** 절감 팁 카드 콘텐츠 (상수) (구현: 패킷 0002) */
+export type savingTips = Array<{ title: string; desc: string; icon: string }>;
 
-export type saveRecordFn = (record: UsageRecord) => void;
+/** 전년 동월 비교 계산 (구현: 패킷 0007) */
+export type compareYoYFn = (current: Record, previous: Record) => { diffKwh: number; diffPercent: number; trendIcon: 'up'|'down'|'flat' };
 
-export type deleteRecordFn = (recordId: string) => void;
+/** 가전 추가 후 사용량 시뮬레이션 (구현: 패킷 0007) */
+export type simulateUsageFn = (baseUsage: Omit<Record, 'id'>, appliances: Appliance[], reduction: number) => { projectedKwh: number; projectedKrw: number };
 
-export type getProfileFn = () => Profile;
+/** 검침 기록 CRUD 훅 (구현: 패킷 0006) */
+export type useRecordsFn = () => { list: () => Record[]; save: (r: Record) => void; delete: (id: string) => void };
 
-export type setProfileFn = (profile: Profile) => void;
+/** 프로필 CRUD 훅 (구현: 패킷 0006) */
+export type useProfileFn = () => { get: () => Profile|null; set: (p: Partial<Profile>) => void };
 
-export type getAppliancesFn = () => Appliance[];
+/** 가전 CRUD 훅 (구현: 패킷 0006) */
+export type useAppliancesFn = () => { list: () => Appliance[]; add: (a: Appliance) => void; update: (id: string, a: Partial<Appliance>) => void; delete: (id: string) => void };
 
-export type setAppliancesFn = (appliances: Appliance[]) => void;
+/** 검침 기록 자동 저장 (구현: 패킷 0010) */
+export type useAutoSaveRecordFn = (record: Record) => void;
 
-export type compareYoYFn = (currentRecord: UsageRecord, previousYearRecord?: UsageRecord) => { percentChange: number; kwh: number; krw: number };
-
-export type canViewReportFn = () => boolean;
-
-export type unlockReportFn = () => void;
-
-export type useAutoSaveRecordFn = (record: UsageRecord | null) => void;
+/** 리포트 열람권 관리 (구현: 패킷 0016) */
+export type useReportUnlockFn = () => { canView: boolean; unlock: () => Promise<void>; resetAt?: string };
