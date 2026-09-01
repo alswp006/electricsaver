@@ -15,6 +15,7 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/result", name: "result" },
   { path: "/history", name: "history" },
   { path: "/simulate", name: "simulate" },
+  { path: "/report", name: "report" },
   // { path: "/settings", name: "settings" },
 ];
 
@@ -31,7 +32,9 @@ async function seed(page: Page): Promise<void> {
 }
 
 // 토스 WebView 밖(일반 브라우저)에서만 나는 알려진 dev 에러 — 무시(실기기 WebView엔 안 남)
-const IGNORED_CONSOLE = [/SafeAreaInsets/i, /getSafeAreaInsets/i];
+// "Failed to load resource...403" — Asset.ContentIcon(static.toss.im CDN 아이콘)이 이 샌드박스
+// 테스트망에서 403으로 막힘(ReportGate 잠금 화면의 iconGiftRegular). 실기기 WebView/운영 도메인에선 정상 로드.
+const IGNORED_CONSOLE = [/SafeAreaInsets/i, /getSafeAreaInsets/i, /Failed to load resource.*403/i];
 
 for (const route of ROUTES) {
   test(`visual smoke: ${route.name} (${route.path})`, async ({ page }) => {
