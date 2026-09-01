@@ -1,24 +1,17 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Top, ListRow, Paragraph, Spacing, Badge, Button, BottomSheet, Chip, ChipItem } from "@toss/tds-mobile";
-import { BarChart3, Calculator, History as HistoryIcon, MapPin } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { Card } from "@/components/Card";
 import { MiniBar } from "@/components/MiniBar";
 import { EmptyState } from "@/components/StateView";
 import { AdSlot } from "@/components/AdSlot";
-import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { getLatestRecord } from "@/lib/recordStore";
 import { getSettings, saveSettings } from "@/lib/settingsStore";
 import { getRegionAverage, listRegions } from "@/lib/regionAverage";
 import type { AppSettings } from "@/lib/types";
-
-const TAB_ITEMS = [
-  { label: "계산", icon: <Calculator size={22} aria-hidden />, path: "/" },
-  { label: "기록", icon: <HistoryIcon size={22} aria-hidden />, path: "/history" },
-  { label: "내 동네", icon: <MapPin size={22} aria-hidden />, path: "/compare" },
-];
 
 const HOUSEHOLD_SIZES = [1, 2, 3, 4] as const;
 
@@ -67,7 +60,6 @@ export default function Compare() {
         <Spacing size={16} />
         <AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID ?? ""} />
         <Spacing size={96} />
-        <FloatingTabBar items={TAB_ITEMS} />
       </ScreenScaffold>
     );
   }
@@ -154,8 +146,6 @@ export default function Compare() {
           ))}
         </div>
       </BottomSheet>
-
-      <FloatingTabBar items={TAB_ITEMS} />
     </ScreenScaffold>
   );
 }

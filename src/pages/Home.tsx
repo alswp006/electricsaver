@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Top, TextField, Tab, ListRow, BottomSheet, Paragraph, Spacing } from "@toss/tds-mobile";
+import { Top, TextField, Tab, ListRow, BottomSheet, Paragraph, Spacing, Button } from "@toss/tds-mobile";
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
-import { SubmitFooter } from "@/components/BottomCTA";
 import { AdSlot } from "@/components/AdSlot";
 import { LoadingState } from "@/components/StateView";
 import { getSettings, saveSettings } from "@/lib/settingsStore";
 import { validateUsageInput, validateYearMonth } from "@/domain/validation";
 import type { BillInput, ContractType, RouteState } from "@/lib/types";
 
-function fireHaptic(type: "tickWeak") {
+function fireHaptic(type: "tickWeak" | "success") {
   try {
     Promise.resolve(generateHapticFeedback({ type })).catch(() => {});
   } catch {
@@ -72,6 +71,7 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
+    fireHaptic("success");
     const usage = validateUsageInput(kWhText);
     if (!usage.ok) {
       setKWhError(usage.message);
@@ -90,7 +90,15 @@ export default function Home() {
   return (
     <ScreenScaffold
       top={<Top title={<Top.TitleParagraph>우리집 전기요금</Top.TitleParagraph>} />}
-      bottom={<SubmitFooter label="요금 계산하기" onClick={handleSubmit} disabled={settingsLoading} />}
+      bottom={
+        // 홈은 탭 루트라 하단에 FloatingTabBar(고정)가 깔린다 → FixedBottomCTA를 쓰면
+        // 탭바와 겹친다. CTA를 흐름 안에 두고 탭바 높이만큼 아래 여백을 준다.
+        <div style={{ padding: "8px 16px calc(var(--toss-safe-area-bottom) + 88px)" }}>
+          <Button variant="fill" display="block" onClick={handleSubmit} disabled={settingsLoading}>
+            요금 계산하기
+          </Button>
+        </div>
+      }
     >
       {settingsLoading ? (
         <LoadingState rows={3} testId="home-skeleton" />
@@ -145,7 +153,7 @@ export default function Home() {
           <Paragraph.Text typography="st13">
             한국전력 주택용 전력 기준 · v2024.01 · 기록은 이 기기에만 저장돼요
           </Paragraph.Text>
-          <Spacing size={80} />
+          <Spacing size={16} />
 
           <BottomSheet
             open={monthSheetOpen}

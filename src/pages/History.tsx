@@ -1,24 +1,17 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Top, ListRow, Paragraph, Spacing, Button, AlertDialog, Toast } from "@toss/tds-mobile";
-import { Calculator, History as HistoryIcon, MapPin, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import { generateHapticFeedback } from "@apps-in-toss/web-framework";
 import { ScreenScaffold } from "@/components/ScreenScaffold";
 import { Sparkline } from "@/components/Sparkline";
 import { EmptyState } from "@/components/StateView";
 import { AdSlot } from "@/components/AdSlot";
-import { FloatingTabBar } from "@/components/FloatingTabBar";
 import { listRecords, removeRecord } from "@/lib/recordStore";
 import { useQuotaToast } from "@/hooks/useQuotaToast";
 import type { RouteState, UsageRecord } from "@/lib/types";
 
 const PAGE_SIZE = 30;
-
-const TAB_ITEMS = [
-  { label: "계산", icon: <Calculator size={22} aria-hidden />, path: "/" },
-  { label: "기록", icon: <HistoryIcon size={22} aria-hidden />, path: "/history" },
-  { label: "내 동네", icon: <MapPin size={22} aria-hidden />, path: "/compare" },
-];
 
 function monthLabel(yearMonth: string): string {
   const [year, month] = yearMonth.split("-");
@@ -145,8 +138,6 @@ export default function History() {
       />
 
       <Toast {...toastProps} />
-
-      <FloatingTabBar items={TAB_ITEMS} />
     </ScreenScaffold>
   );
 }
