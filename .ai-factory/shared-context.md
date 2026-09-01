@@ -253,6 +253,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - heal-1-01: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
 - heal-1-02: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
 - heal-1-03: 0008 홈 화면(/) 완성 — HomeInput/HomeData 분할 구현 및 전 라우트 스모크 복구 (files: src/pages/HomeInput.tsx, src/pages/HomeData.tsx, src/types/navigation.ts)
+- 0005: localStorage 저수준 래퍼 + 플래그 마이그레이션 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
 
 ## Available exports from existing files
 // src/App.tsx
