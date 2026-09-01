@@ -201,8 +201,15 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0015: S5 리포트 본문 — 팁 카드 + state 가드 (/report) (files: src/pages/Report.tsx)
 - 0017: S6 우리 동네 비교 — 지연 로더 + 히어로 (/region) (files: src/pages/Region.tsx)
 - 0019: S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/settings) (files: src/pages/Settings.tsx)
+- 0020: 라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유) (files: src/App.tsx, src/components/FloatingTabBar.tsx)
+
+## TDD 상태
+⚠️ TDD 테스트 파일 자동 작성에 실패했습니다. 소스 코드를 작성하기 전에 `src/__tests__/packet-XXXX.test.ts` 파일에 AC 기반 테스트를 먼저 작성하세요 (TDD red phase). 테스트 작성 후 구현하세요.
 
 ## Available exports from existing files
+// src/App.tsx
+export default function App() {
+
 // src/components/AdSlot.tsx
 export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
 
@@ -222,6 +229,10 @@ export function Card({
 
 // src/components/CountUp.tsx
 export function CountUp({
+
+// src/components/FloatingTabBar.tsx
+export type TabItem = {
+export function FloatingTabBar({ items }: { items: TabItem[] }) {
 
 // src/components/MiniBar.tsx
 export function MiniBar({
@@ -267,13 +278,7 @@ export interface ApplianceCatalogItem {
 export const APPLIANCES: ApplianceCatalogItem[] = [
 
 // src/data/savingTips.ts
-export const SAVING_TIPS: Record<string, [string, string, string]> = {
-
-// src/domain/calculateBill.ts
-export { getStage, getNextStageGap };
-export function calculateBill(kWh: number, month: number): BillBreakdown {
-
-// src/domai
+export const SAVING_TIPS: Record<string, [string, str
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
