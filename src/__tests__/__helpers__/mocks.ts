@@ -10,6 +10,9 @@
  * Or use all at once:
  *   import { mockAll } from "@/__tests__/__helpers__/mocks";
  *   mockAll();
+ *
+ * TossRewardAd is mocked separately — see mockTossRewardAd.ts (not included
+ * in mockAll(); import and call it directly when a test needs it).
  */
 
 import React from "react";
@@ -288,18 +291,8 @@ export function mockAppsInToss() {
 }
 
 // ── Toss Reward Ad Component ──
-// TossRewardAd is a project-local component that wraps content behind ad viewing.
-// In tests, render the children directly (ad always "watched").
-export function mockTossRewardAd() {
-  vi.mock("@/components/TossRewardAd", () => ({
-    TossRewardAd: ({ children, onReward }: any) => {
-      // Auto-trigger onReward in tests to unlock content
-      if (onReward) setTimeout(onReward, 0);
-      return children;
-    },
-    default: ({ children }: any) => children,
-  }));
-}
+// Moved to its own file (mockTossRewardAd.ts) — see that file's header comment
+// for why it must not live here or be statically re-exported from this module.
 
 // ── react-router-dom ──
 // Preserve actual router + override useNavigate for assertion.
@@ -323,6 +316,5 @@ export function mockRouter() {
 export function mockAll() {
   mockTds();
   mockAppsInToss();
-  mockTossRewardAd();
   mockRouter();
 }
