@@ -1,0 +1,19 @@
+[
+  { "regionCode": "11", "regionName": "서울", "avgKWh": [210, 268, 312, 349] },
+  { "regionCode": "26", "regionName": "부산", "avgKWh": [205, 260, 305, 341] },
+  { "regionCode": "27", "regionName": "대구", "avgKWh": [208, 263, 308, 344] },
+  { "regionCode": "28", "regionName": "인천", "avgKWh": [206, 261, 306, 342] },
+  { "regionCode": "29", "regionName": "광주", "avgKWh": [200, 255, 298, 333] },
+  { "regionCode": "30", "regionName": "대전", "avgKWh": [203, 258, 302, 337] },
+  { "regionCode": "31", "regionName": "울산", "avgKWh": [212, 270, 315, 352] },
+  { "regionCode": "36", "regionName": "세종", "avgKWh": [198, 252, 295, 330] },
+  { "regionCode": "41", "regionName": "경기", "avgKWh": [214, 272, 318, 355] },
+  { "regionCode": "42", "regionName": "강원", "avgKWh": [220, 280, 328, 366] },
+  { "regionCode": "43", "regionName": "충북", "avgKWh": [209, 266, 311, 347] },
+  { "regionCode": "44", "regionName": "충남", "avgKWh": [211, 269, 314, 350] },
+  { "regionCode": "45", "regionName": "전북", "avgKWh": [201, 256, 300, 335] },
+  { "regionCode": "46", "regionName": "전남", "avgKWh": [199, 253, 296, 331] },
+  { "regionCode": "47", "regionName": "경북", "avgKWh": [216, 274, 320, 358] },
+  { "regionCode": "48", "regionName": "경남", "avgKWh": [207, 262, 307, 343] },
+  { "regionCode": "50", "regionName": "제주", "avgKWh": [195, 248, 290, 324] }
+]
