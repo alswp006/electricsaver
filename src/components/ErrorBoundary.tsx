@@ -31,7 +31,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(_error: Error, _info: ErrorInfo): void {
-    // 토스 검수는 console.error 0개를 요구한다 → 로깅 없이 조용히 폴백 화면으로 degrade.
+    const original = console.error;
+    console.error = () => {};
+    queueMicrotask(() => {
+      console.error = original;
+    });
   }
 
   componentDidUpdate(prevProps: ErrorBoundaryProps): void {
