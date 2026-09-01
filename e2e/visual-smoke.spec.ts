@@ -13,6 +13,7 @@ import { test, expect, type Page } from "@playwright/test";
 const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/history", name: "history" },
+  { path: "/region", name: "region" },
   // { path: "/result", name: "result" },   // ← 이 앱의 라우트를 추가
   // { path: "/settings", name: "settings" },
 ];
@@ -26,6 +27,10 @@ async function seed(page: Page): Promise<void> {
         { yearMonth: "2026-08", kWh: 350, total: 60510, createdAt: 2 },
         { yearMonth: "2026-07", kWh: 280, total: 48000, createdAt: 1 },
       ]),
+    );
+    window.localStorage.setItem(
+      "es:profile",
+      JSON.stringify({ regionCode: "11", householdSize: 2 }),
     );
   });
 }

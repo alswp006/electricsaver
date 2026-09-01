@@ -2,8 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import Home from './pages/Home';
 import History from './pages/History';
-import Result from './pages/Result';
-import Simulate from './pages/Simulate';
+import Region from './pages/Region';
 
 // Dev-only TDS Gallery route — `import.meta.env.DEV` is statically replaced
 // (true in dev, false in prod) so the entire import + Route is tree-shaken
@@ -17,8 +16,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/history" element={<History />} />
-      <Route path="/result" element={<Result />} />
-      <Route path="/simulate" element={<Simulate />} />
+      <Route path="/region" element={<Region />} />
       {DevTdsGallery && (
         <Route
           path="/__tds-gallery"
