@@ -130,3 +130,85 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 엔티티 타입 + RouteState 계약 정의 (files: src/types/domain.ts, src/types/navigation.ts, src/types/storage.ts)
 - 0002: 요금표 상수 + 정적 카탈로그 데이터 (files: src/domain/rateTable.ts, src/data/applianceCatalog.ts, src/data/savingTips.ts, src/data/regionAverage.json)
+
+## Available exports from existing files
+// src/App.tsx
+export default function App() {
+
+// src/components/AdSlot.tsx
+export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
+
+// src/components/Amount.tsx
+export function Amount({
+
+// src/components/BottomCTA.tsx
+export function SubmitFooter({
+export function ButtonStack({
+
+// src/components/Card.tsx
+export function Card({
+
+// src/components/CountUp.tsx
+export function CountUp({
+
+// src/components/FloatingTabBar.tsx
+export type TabItem = {
+export function FloatingTabBar({ items }: { items: TabItem[] }) {
+
+// src/components/MiniBar.tsx
+export function MiniBar({
+
+// src/components/PageShell.tsx
+export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+
+// src/components/ScreenScaffold.tsx
+export function ScreenScaffold({
+
+// src/components/Sparkline.tsx
+export function Sparkline({
+
+// src/components/StateView.tsx
+export function EmptyState({
+export function LoadingState({
+
+// src/components/SummaryHero.tsx
+export function SummaryHero({
+
+// src/components/TossPurchase.tsx
+export interface TossPurchaseResult {
+export function TossPurchase({
+
+// src/components/TossRewardAd.tsx
+export function TossRewardAd({
+
+// src/data/applianceCatalog.ts
+export interface ApplianceCatalogItem {
+export const APPLIANCES: ApplianceCatalogItem[] = [
+
+// src/data/savingTips.ts
+export const SAVING_TIPS: Record<string, [string, string, string]> = {
+
+// src/domain/rateTable.ts
+export interface RateStage {
+export const RATE_TABLE: { winter: RateStage[]; summer: RateStage[] } = {
+export const CLIMATE_RATE = 9.0;
+export const FUEL_RATE = 5.0;
+export const VAT_RATE = 0.1;
+export const FUND_RATE = 0.037;
+export const MAX_KWH = 3000;
+
+// src/lib/contract.ts
+export type UsageRecord = { id: string; date: string; usageKwh: number; amountKrw: number; region?: string };
+export type Appliance = { id: string; name: string; categoryId: string; estimatedKwhPerMonth?: number; color?: string };
+export type Profile = { region: string; househo
+
+## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
+
+Available topics: deploy(1), general(9), testing(1), ui(1)
+
+Key lessons (verify against actual code before applying):
+- [ui] 라우터에 정적 import 되는 화면 모듈은 기능 구현 전에 반드시 렌더 가능한 최소 스텁(유효한 default export + 빈 상태 화면)으로 먼저 커밋해, 한 화면의 미완성이 전 라우트 스모크 타임아웃으로 번지지 않게 하라. (60% · 타 앱 1회 — 맹신 금지)
+- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
+- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
+- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
+- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)
