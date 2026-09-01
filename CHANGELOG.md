@@ -2,14 +2,16 @@
 
 ## [0.1.0] - 2026-09-01
 
-17/20 packets completed.
+22/23 packets completed.
 
 ### Added
 - feat: 엔티티 타입 + RouteState 계약 정의 (packet 0001)
 - feat: 요금표 상수 + 정적 카탈로그 데이터 (packet 0002)
 - feat: calculateBill 계산 엔진 + CP-6 픽스처 테스트 (packet 0003)
 - feat: 구간 헬퍼 + 입력 검증기 (packet 0004)
+- feat: localStorage 저수준 래퍼 + 플래그 마이그레이션 (packet 0005)
 - feat: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교) (packet 0007)
+- feat: S1 홈 화면 — 사용량 입력 · 월 선택 · 예상치 고지 (/) (packet 0008)
 - feat: S2 결과 화면 렌더링 — 히어로·구간 카드·내역 카드 (/result) (packet 0009)
 - feat: S2 결과 자동 저장 + state 가드 (packet 0010)
 - feat: S3 검침 기록 화면 — 목록·삭제·빈 상태 (/history) (packet 0011)
@@ -22,3 +24,9 @@
 - feat: S6 프로필 BottomSheet (지역·가구원수) (packet 0018)
 - feat: S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/settings) (packet 0019)
 - feat: 라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유) (packet 0020)
+- feat: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (packet heal-1-01)
+- feat: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (packet heal-1-02)
+- feat: 0008 홈 화면(/) 완성 — HomeInput/HomeData 분할 구현 및 전 라우트 스모크 복구 (packet heal-1-03)
+
+### Known Issues
+- 엔티티 CRUD 리포지토리 (records/profile/appliances/unlocks) (packet 0006) — skipped
