@@ -8,6 +8,8 @@ import Report from './pages/Report';
 import Region from './pages/Region';
 import Settings from './pages/Settings';
 import { FloatingTabBar, type TabItem } from './components/FloatingTabBar';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { LoadingState } from './components/StateView';
 import { migrateFlags } from './lib/storage';
 
 // Dev-only TDS Gallery route — `import.meta.env.DEV` is statically replaced
@@ -27,6 +29,19 @@ const TABBAR_PATHS = new Set(['/', '/history', '/region', '/settings']);
 
 /** 탭바 높이(6 + 최소 44 + 6 ≈ 56) + 여유. 마지막 콘텐츠가 탭바에 가리지 않도록. */
 const TABBAR_SPACER = 'calc(64px + env(safe-area-inset-bottom))';
+
+/**
+ * Routes를 감싸는 Suspense의 최소 로딩 뷰.
+ * lazy 라우트가 하나라도 있으면 fallback 없는 Suspense는 곧 "아무것도 안 그려지는" 화면 =
+ * 스모크 타임아웃의 직접 원인이다 → 항상 눈에 보이는 골격(Skeleton)을 그린다.
+ */
+function BootFallback() {
+  return (
+    <div style={{ padding: '24px 16px' }}>
+      <LoadingState rows={3} testId="boot-fallback" />
+    </div>
+  );
+}
 
 function TabIcon({ d }: { d: string }) {
   return (
@@ -92,48 +107,50 @@ export default function App() {
 
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route
-          path="/result"
-          element={
-            <RequireRouteState field="input">
-              <Result />
-            </RequireRouteState>
-          }
-        />
-        <Route path="/history" element={<History />} />
-        <Route
-          path="/simulate"
-          element={
-            <RequireRouteState field="input">
-              <Simulate />
-            </RequireRouteState>
-          }
-        />
-        <Route
-          path="/report"
-          element={
-            <RequireRouteState field="summary">
-              <Report />
-            </RequireRouteState>
-          }
-        />
-        <Route path="/region" element={<Region />} />
-        <Route path="/settings" element={<Settings />} />
-        {DevTdsGallery && (
-          <Route
-            path="/__tds-gallery"
-            element={
-              <Suspense fallback={null}>
-                <DevTdsGallery />
-              </Suspense>
-            }
-          />
-        )}
-        {/* 알 수 없는 경로로 들어와도 흰 화면 대신 홈으로 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {/*
+        배선 순서 고정: Router(main.tsx) > 전역 Provider(main.tsx) > ErrorBoundary > Suspense > Routes.
+        · ErrorBoundary가 Suspense보다 바깥 — 화면이 throw해도 트리 언마운트(흰 화면) 대신 에러 뷰가 뜬다.
+        · resetKey=pathname — 한 화면이 터져도 탭/뒤로가기로 경로가 바뀌면 자동 복구된다.
+        · FloatingTabBar는 경계 밖 — 에러 화면에서도 탭이 남아 탈출 경로가 유지된다.
+      */}
+      <ErrorBoundary resetKey={location.pathname}>
+        <Suspense fallback={<BootFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route
+              path="/result"
+              element={
+                <RequireRouteState field="input">
+                  <Result />
+                </RequireRouteState>
+              }
+            />
+            <Route path="/history" element={<History />} />
+            <Route
+              path="/simulate"
+              element={
+                <RequireRouteState field="input">
+                  <Simulate />
+                </RequireRouteState>
+              }
+            />
+            <Route
+              path="/report"
+              element={
+                <RequireRouteState field="summary">
+                  <Report />
+                </RequireRouteState>
+              }
+            />
+            <Route path="/region" element={<Region />} />
+            <Route path="/settings" element={<Settings />} />
+            {/* 위 Suspense가 lazy를 받아준다 — 라우트별 중첩 Suspense 불필요. */}
+            {DevTdsGallery && <Route path="/__tds-gallery" element={<DevTdsGallery />} />}
+            {/* 알 수 없는 경로로 들어와도 흰 화면 대신 홈으로 */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
 
       {showTabBar && (
         <>
