@@ -152,6 +152,8 @@ export interface AppFlags {
   pages/
     History.tsx
     Home.tsx
+    HomeData.tsx
+    HomeInput.tsx
     Region.tsx
     Report.tsx
     Result.tsx
@@ -169,7 +171,7 @@ export interface AppFlags {
 
 ### Exports (src/lib/)
 - appliances.ts: export type AddApplianceResult =; export function getAppliances(): ApplianceItem[]; export function addAppliance(appliance: ApplianceItem): AddApplianceResult; export function updateAppliance(id: string, patch: Partial<ApplianceItem>); export function removeAppliance(id: string)
-- contract.ts: export type BillRecord =; export type Profile =; export type Appliance =; export type RouteState =; export type RateTable =; export type calculateBillFn = (usageKwh: number, profile: Profile, rate: RateTable) =>; export type validateUsageFn = (value: string | number) =>; export type regionAverages =
+- contract.ts: export type Record =; export type Profile =; export type Appliance =; export type Unlock =; export type RouteState =; export type RateSegment =; export type RateTable =; export type ApplianceCatalogItem =
 - profile.ts: export function getProfile(): UserProfile; export function setProfile(patch: Partial<UserProfile>)
 - records.ts: export function getRecords(): MeterRecord[]; export function upsertRecord(record: MeterRecord); export function deleteRecord(yearMonth: string)
 - storage.ts: export function readJSON<T>(key: string, fallback: T): ReadResult<T>; export function writeJSON<T>(key: string, value: T): WriteResult; export function removeKeys(keys: string[]): void; export function getStorageBytes(): number; export function migrateFlags(): void; export function upsertRecord(record: MeterRecord): WriteResult; export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void
@@ -203,6 +205,8 @@ export interface AppFlags {
   lib/profile.ts → imports: types/domain
   lib/records.ts → imports: types/domain
   lib/unlocks.ts → imports: types/domain
+  pages/HomeData.tsx → imports: lib/records, lib/storage, domain/validate, types/domain, types/navigation
+  pages/HomeInput.tsx → imports: components/ScreenScaffold, components/Card, components/SummaryHero, components/Amount, types/domain
   pages/Report.tsx → imports: components/ScreenScaffold, components/Card, data/savingTips, lib/utils, types/domain
   pages/Result.tsx → imports: components/ScreenScaffold, components/SummaryHero, components/Amount, components/Card, components/MiniBar, components/BottomCTA, domain/calculateBill, domain/stage, domain/rateTable, lib/utils, lib/types, types/navigation
   pages/Settings.tsx → imports: components/ScreenScaffold, components/ProfileSheet, hooks/useProfile, lib/storage, data/regionAverage.json, types/domain
@@ -248,6 +252,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0020: 라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유) (files: src/App.tsx, src/components/FloatingTabBar.tsx)
 - heal-1-01: 0005 storage 래퍼 완성 — 결과객체 기반 localStorage 계층 (files: src/lib/storage.ts, src/lib/__tests__/storage.test.ts)
 - heal-1-02: 0006 엔티티 CRUD 리포지토리 완성 — records/profile/appliances/unlocks (files: src/lib/records.ts, src/lib/profile.ts, src/lib/appliances.ts, src/lib/unlocks.ts, src/lib/__tests__/repos.test.ts)
+- heal-1-03: 0008 홈 화면(/) 완성 — HomeInput/HomeData 분할 구현 및 전 라우트 스모크 복구 (files: src/pages/HomeInput.tsx, src/pages/HomeData.tsx, src/types/navigation.ts)
 
 ## Available exports from existing files
 // src/App.tsx
