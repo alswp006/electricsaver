@@ -256,11 +256,7 @@ export interface ApplianceCatalogItem {
 export const APPLIANCES: ApplianceCatalogItem[] = [
 
 // src/data/savingTips.ts
-export const SAVING_TIPS: Record<string, [string, string, string]> = {
-
-// src/domain/calculateBill.ts
-export { getStage, getNextStageGap };
-export function calculateBill(kWh: number, month: number): BillBreakdown {
+export const SAVING_TIPS: Record<string, [string, str
 
 ## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
 
