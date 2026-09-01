@@ -210,8 +210,11 @@ export const STORAGE_KEYS = {
     contract.ts
     recordStore.ts
     safeStorage.ts
+    settingsStore.ts
+    simStore.ts
     storage.ts
     types.ts
+    unlockStore.ts
     utils.ts
   main.tsx
   pages/
@@ -227,8 +230,11 @@ export const STORAGE_KEYS = {
 - contract.ts: export type Bill =; export type DomainInput =; export type RouteState =; export type calcBillFn = (input: DomainInput) => Bill; export type roundToNearestFn = (value: number, unit?: number) => number; export type validateUsageFn = (value: number) =>; export type compareYoYFn = (currentMonth: Bill, previousYearMonth: Bill) =>; export type recordStoreFn =
 - recordStore.ts: export function listRecords(): UsageRecord[]; export function getLatestRecord(): UsageRecord | null; export type UpsertResult = WriteResult & UsageRecord; export function upsertRecord(rec: UsageRecord): UpsertResult; export function removeRecord(id: string): WriteResult; export function pruneRecords(): WriteResult; export const recordStore: recordStoreFn =
 - safeStorage.ts: export type WriteResult =; export function readJson<T = unknown>(key: string, fallback: T): any; export function writeJson<T = unknown>(key: string, value: T): WriteResult
+- settingsStore.ts: export function getSettings(): AppSettings; export function saveSettings(patch: Partial<AppSettings>): AppSettings
+- simStore.ts: export function getLastSim(): SimulationInput | null; export function saveSim(input: SimulationInput): SimulationInput
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
 - types.ts: export type ContractType = "low" | "high"; export interface TariffTier; export interface TariffTable; export interface BillInput; export interface TierUsage; export interface BillBreakdown; export interface UsageRecord; export interface AppSettings
+- unlockStore.ts: export function isUnlocked(recordId: string): boolean; export function unlock(recordId: string): void
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -249,6 +255,9 @@ export const STORAGE_KEYS = {
 
 ### Module Dependencies (import graph)
   lib/recordStore.ts → imports: lib/types, lib/types, lib/safeStorage, lib/contract, domain/tariff
+  lib/settingsStore.ts → imports: lib/types, lib/types, lib/safeStorage
+  lib/simStore.ts → imports: lib/types, lib/types, lib/safeStorage
+  lib/unlockStore.ts → imports: lib/types, lib/types, lib/safeStorage
 CRITICAL: Before creating any new function, type, or component, check the list above. If something similar exists, import and use it.
 
 ## Already Implemented (do NOT duplicate or overwrite)
@@ -258,84 +267,4 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0004: 입력 검증 + 비교/시뮬레이션 순수 함수 (files: src/domain/validation.ts, src/domain/compare.ts, src/domain/simulate.ts, src/domain/__tests__/simulate.test.ts)
 - 0005: safeStorage 기반 계층 (CC-12 대응) (files: src/lib/safeStorage.ts, src/lib/__tests__/safeStorage.test.ts)
 - 0006: recordStore (list/upsert/remove/prune/latest) (files: src/lib/recordStore.ts, src/lib/__tests__/recordStore.test.ts)
-
-## Available exports from existing files
-// src/App.tsx
-export default function App() {
-
-// src/components/AdSlot.tsx
-export function AdSlot({ adGroupId, className, variant, theme }: AdSlotProps) {
-
-// src/components/Amount.tsx
-export function Amount({
-
-// src/components/BottomCTA.tsx
-export function SubmitFooter({
-export function ButtonStack({
-
-// src/components/Card.tsx
-export function Card({
-
-// src/components/CountUp.tsx
-export function CountUp({
-
-// src/components/FloatingTabBar.tsx
-export type TabItem = {
-export function FloatingTabBar({ items }: { items: TabItem[] }) {
-
-// src/components/MiniBar.tsx
-export function MiniBar({
-
-// src/components/PageShell.tsx
-export function PageShell({ children, style }: { children: ReactNode; style?: CSSProperties }) {
-
-// src/components/ScreenScaffold.tsx
-export function ScreenScaffold({
-
-// src/components/Sparkline.tsx
-export function Sparkline({
-
-// src/components/StateView.tsx
-export function EmptyState({
-export function LoadingState({
-
-// src/components/SummaryHero.tsx
-export function SummaryHero({
-
-// src/components/TossPurchase.tsx
-export interface TossPurchaseResult {
-export function TossPurchase({
-
-// src/components/TossRewardAd.tsx
-export function TossRewardAd({
-
-// src/domain/appliances.ts
-export const APPLIANCES: Appliance[] = [
-
-// src/domain/calcBill.ts
-export function calcBill(input: BillInput): BillBreakdown {
-
-// src/domain/compare.ts
-export function findYoY(records: UsageRecord[], yearMonth: string): UsageRecord | null {
-export function diffPercent(prev: number, curr: number): number {
-export function compareYoY(currentMonth: Bill, previousYearMonth: Bill): { delta: number; percent: number } {
-
-// src/domain/rounding.ts
-export function floor1(value: number): number {
-export function floor10(value: number): number {
-export function roundToNearest(value: number, unit: number = 1): number {
-
-// src/domain/simulate.ts
-export interface SimulationResult {
-export function simulate(base: BillInput, cuts: ApplianceCut[], days: number = 30): SimulationResult
-
-## Memory Index (자동 학습 — 힌트로만 사용, 실제 코드 확인 필수)
-
-Available topics: deploy(1), general(10), testing(1), ui(1)
-
-Key lessons (verify against actual code before applying):
-- [general] 저장·데이터 접근 등 기반 계층 패킷은 이를 import 하는 화면 패킷보다 반드시 먼저 완료·병합하고, 미완료면 상위 화면 패킷 병합을 차단하라 — 빈 기반 모듈 하나가 전 라우트 스모크를 무너뜨린다. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 외부에서 들어온 모든 값(라우터 state, 로컬 저장소, 부분 입력 폼)은 사용 직전에 배열·객체 기본값으로 정규화하고, 테이블/맵 조회 결과는 존재 확인 후에만 하위 속성이나 length에 접근하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 의존 그래프 최하층의 타입·계약 파일은 런타임 코드 0줄의 순수 선언으로 가장 먼저 단독 타입체크를 통과시키고, 파일 생성은 셸 명령이 아닌 허용된 편집 도구로만 하게 강제하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 영속 저장소에서 읽은 값은 항상 스키마 기본값으로 정규화해 배열·객체 타입을 보장한 뒤 반환하고, 화면은 빈/손상/부분 데이터에서도 렌더되도록 방어하라. (60% · 타 앱 1회 — 맹신 금지)
-- [general] 정책·기능 제거형 리팩터링은 화면과 도메인 로직 레이어에서만 수행하고, package.json의 플랫폼 필수 의존성(디자인 시스템·플랫폼 SDK·프레임워크 코어)은 어떤 경우에도 삭제하지 말 것 — 필수 패키지 화이트리스트를 빌드 전 가드로 검증하라. (60% · 타 앱 1회 — 맹신 금지)
+- 0007: settingsStore · simStore · unlockStore (files: src/lib/settingsStore.ts, src/lib/simStore.ts, src/lib/unlockStore.ts, src/lib/__tests__/stores.test.ts)
