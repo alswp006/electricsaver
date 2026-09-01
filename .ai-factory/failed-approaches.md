@@ -37,3 +37,15 @@
  .ai-factory/shared-context.md               |  69 ++++++++-------
  CLAUDE.md                                   |   8 +-
  src/lib/__tests__/storage.test.ts           | 130 +++++++++++++++++
+
+## 엔티티 CRUD 리포지토리 (records/profile/appliances/unlocks) — fix loop 2026-09-01T08:23:50.323Z
+- 시도 횟수: 1
+- 트리아지: moderate (triage fallback (LLM call failed))
+- 에러 변화:
+  Attempt 1: initial errors — tsc:6|lint:0|test:0
+- 비용: $0.1607
+- 수정된 파일:
+ .ai-factory/shared-context.md | 87 ++++++++++++++++++++++++++++++++++++++++++-
+ src/lib/contract.ts           |  4 +-
+ 2 files changed, 89 insertions(+), 2 deletions(-)
+

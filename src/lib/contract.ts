@@ -13,6 +13,8 @@ export type Appliance = { id: string; category: string; estimatedMonthlyKwh: num
 
 export type RateStage = { min: number; max: number; unitPrice: number; rangeKwh: number; chargeKrw: number };
 
+export type RateTableRow = RateStage;
+
 export type MonthKey = string;
 
 export type RouteState = { pathname: "/" | "/result" | "/history" | "/simulate" | "/report" | "/region" | "/settings"; params?: Record<string, unknown> };
@@ -29,7 +31,7 @@ export type validateAmountFn = (value: unknown) => ValidateAmountResult;
 
 export type validateUsageKwhFn = (value: unknown) => ValidateAmountResult;
 
-export type StorageResult = { ok: true; data: T } | { ok: false; error: string };
+export type StorageResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export type getItemFn = <T>(key: string, schema?: object) => StorageResult<T>;
 
