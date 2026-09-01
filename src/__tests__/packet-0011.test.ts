@@ -43,13 +43,13 @@ describe("S3 검침 기록 화면 — 목록·삭제·빈 상태 (/history) [pac
     const rows = screen.getAllByTestId("record-row");
     expect(rows).toHaveLength(3);
 
-    // yearMonth 내림차순: 2026-08 > 2025-08 > 2026-06
+    // yearMonth 내림차순: 2026-08 > 2026-06 > 2025-08
     expect(within(rows[0]).getByText(/2026년 8월/)).toBeInTheDocument();
     expect(within(rows[0]).getByText(/350kWh/)).toBeInTheDocument();
     expect(within(rows[0]).getByText(/60,510원/)).toBeInTheDocument();
 
-    expect(within(rows[1]).getByText(/2025년 8월/)).toBeInTheDocument();
-    expect(within(rows[2]).getByText(/2026년 6월/)).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/2026년 6월/)).toBeInTheDocument();
+    expect(within(rows[2]).getByText(/2025년 8월/)).toBeInTheDocument();
   });
 
   it("AC-3[P0]: 삭제 액션 탭 → AlertDialog 확인 → '삭제' 확정 시 즉시 목록에서 사라지고 새로고침(재마운트) 후에도 복구되지 않는다", () => {
