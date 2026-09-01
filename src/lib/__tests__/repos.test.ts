@@ -288,7 +288,7 @@ describe("AC-4: unlocks.ts — addUnlock, pruneUnlocks, hasValidUnlock", () => {
     const { addUnlock, pruneUnlocks, getUnlocks } = await import("@/lib/unlocks");
 
     const now = Date.now();
-    addUnlock("appliance-1", now - 100000); // Expired
+    addUnlock("appliance-1", now - 90000000); // Unlocked >24h ago, already expired
     addUnlock("appliance-2", now + 50000); // Still valid
 
     pruneUnlocks(now);
