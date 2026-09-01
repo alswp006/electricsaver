@@ -35,11 +35,7 @@ export function writeJSON<T>(key: string, value: T): WriteResult {
   try {
     localStorage.setItem(key, JSON.stringify(value));
     return { ok: true };
-  } catch (error) {
-    const err = error as Error;
-    if (err.name === "QuotaExceededError") {
-      return { ok: false, reason: "quota" };
-    }
+  } catch {
     return { ok: false, reason: "quota" };
   }
 }

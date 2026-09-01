@@ -13,45 +13,56 @@
  * 타입을 그대로 가정해도 된다. 추측이 어긋나 병합에서 무너지는 것을 막기 위한 파일이다.
  */
 
-export type UsageRecord = { id: string; date: string; usageKwh: number; amountKrw: number; region?: string };
+/** 검침 기록 엔티티 (구현: 패킷 0001) */
+export type Record = { id: string; date: string; usageKwh: number; billKrw: number; memo?: string };
 
-export type Appliance = { id: string; name: string; categoryId: string; estimatedKwhPerMonth?: number; color?: string };
+/** 사용자 프로필 (구현: 패킷 0001) */
+export type Profile = { regionCode: string; householdCount: number; updated: string };
 
-export type Profile = { region: string; householdSize: number; lastUpdated?: string };
+/** 가전 엔티티 (구현: 패킷 0001) */
+export type Appliance = { id: string; name: string; category: string; powerW: number; monthlyHourEst: number };
 
-export type BillBreakdown = { totalKrw: number; stages: Array<{ from: number; to: number; rateKrw: number; usageKwh: number; costKrw: number }>; appliances?: Record<string, number> };
+/** 라우트 상태 (구현: 패킷 0001) */
+export type RouteState = { page: 'home'|'result'|'history'|'simulate'|'report'|'region'|'settings'; params?: Record<string, any> };
 
-export type Unlock = { reportViewable: boolean; lastRewardAdAt?: string; monthlyViewCount: number };
+/** 요금 구간 테이블 (구현: 패킷 0002) */
+export type RateTable = { name: string; stages: Array<{ upperKwh: number; unitKrw: number }> };
 
-export type RateTable = { year: number; region: string; stages: Array<{ from: number; to: number; rateKrw: number }> };
+/** 월 요금 계산 엔진 (구현: 패킷 0003) */
+export type calculateBillFn = (usageKwh: number, profile: Profile, rate: RateTable) => { baseKrw: number; discountKrw: number; totalKrw: number };
 
-export type RouteState = { view: 'home' | 'result' | 'history' | 'simulate' | 'report' | 'region' | 'settings'; queryParams?: Record<string, string> };
+/** 사용량 입력 검증 (구현: 패킷 0004) */
+export type validateUsageFn = (value: string) => { valid: boolean; error?: string };
 
-export type calculateBillFn = (usageKwh: number, rate: RateTable) => BillBreakdown;
+/** 지역별 평균 사용량·요금 (상수) (구현: 패킷 0002) */
+export type regionAverages = { [key: string]: { avgKwh: number; avgKrw: number } };
 
-export type validateUsageFn = (value: string | number) => { valid: boolean; error?: string; normalized?: number };
+/** 가전 카탈로그 (상수) (구현: 패킷 0002) */
+export type applianceCatalog = Appliance[];
 
-export type getRecordsFn = () => UsageRecord[];
+/** 절감 팁 카드 콘텐츠 (상수) (구현: 패킷 0002) */
+export type savingTips = Array<{ title: string; desc: string; icon: string }>;
 
-export type saveRecordFn = (record: UsageRecord) => void;
+/** 전년 동월 비교 계산 (구현: 패킷 0007) */
+export type compareYoYFn = (current: Record, previous: Record) => { diffKwh: number; diffPercent: number; trendIcon: 'up'|'down'|'flat' };
 
-export type deleteRecordFn = (recordId: string) => void;
+/** 가전 추가 후 사용량 시뮬레이션 (구현: 패킷 0007) */
+export type simulateUsageFn = (baseUsage: Omit<Record, 'id'>, appliances: Appliance[], reduction: number) => { projectedKwh: number; projectedKrw: number };
 
-export type getProfileFn = () => Profile;
+/** 검침 기록 CRUD 훅 (구현: 패킷 0006) */
+export type useRecordsFn = () => { list: () => Record[]; save: (r: Record) => void; delete: (id: string) => void };
 
-export type setProfileFn = (profile: Profile) => void;
+/** 프로필 CRUD 훅 (구현: 패킷 0006) */
+export type useProfileFn = () => { get: () => Profile|null; set: (p: Partial<Profile>) => void };
 
-export type getAppliancesFn = () => Appliance[];
+/** 가전 CRUD 훅 (구현: 패킷 0006) */
+export type useAppliancesFn = () => { list: () => Appliance[]; add: (a: Appliance) => void; update: (id: string, a: Partial<Appliance>) => void; delete: (id: string) => void };
 
-export type setAppliancesFn = (appliances: Appliance[]) => void;
+/** 검침 기록 자동 저장 (구현: 패킷 0010) */
+export type useAutoSaveRecordFn = (record: Record) => void;
 
-export type compareYoYFn = (currentRecord: UsageRecord, previousYearRecord?: UsageRecord) => { percentChange: number; kwh: number; krw: number };
-
-export type canViewReportFn = () => boolean;
-
-export type unlockReportFn = () => void;
-
-export type useAutoSaveRecordFn = (record: UsageRecord | null) => void;
+/** 리포트 열람권 관리 (구현: 패킷 0016) */
+export type useReportUnlockFn = () => { canView: boolean; unlock: () => Promise<void>; resetAt?: string };
 
 ```
 
@@ -151,7 +162,7 @@ export interface AppFlags {
   vite-env.d.ts
 
 ### Exports (src/lib/)
-- contract.ts: export type UsageRecord =; export type Appliance =; export type Profile =; export type BillBreakdown =; export type Unlock =; export type RateTable =; export type RouteState =; export type calculateBillFn = (usageKwh: number, rate: RateTable) => BillBreakdown
+- contract.ts: export type Record =; export type Profile =; export type Appliance =; export type RouteState =; export type RateTable =; export type calculateBillFn = (usageKwh: number, profile: Profile, rate: RateTable) =>; export type validateUsageFn = (value: string) =>; export type regionAverages =
 - storage.ts: export function readJSON<T>(key: string, fallback: T): ReadResult<T>; export function writeJSON<T>(key: string, value: T): WriteResult; export function removeKeys(keys: string[]): void; export function getStorageBytes(): number; export function migrateFlags(): void; export function upsertRecord(record: MeterRecord): WriteResult; export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void
 - types.ts: export interface StageBreakdown; export interface BillBreakdown; export interface AppFlags
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
@@ -190,16 +201,16 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 - 0003: calculateBill 계산 엔진 + CP-6 픽스처 테스트 (files: src/domain/calculateBill.ts, src/domain/__tests__/calculateBill.test.ts)
 - 0004: 구간 헬퍼 + 입력 검증기 (files: src/domain/stage.ts, src/domain/validate.ts, src/domain/calculateBill.ts, src/domain/__tests__/stage.test.ts)
 - 0007: 파생 계산 (YoY 비교 / 시뮬레이션 / 지역 비교) (files: src/domain/compare.ts, src/domain/simulate.ts, src/domain/__tests__/derive.test.ts)
-- 0010: S2 결과 자동 저장 + state 가드 (files: src/hooks/useResultGuard.ts, src/hooks/useAutoSaveRecord.ts)
-- 0012: S3 전년 동월 비교 Chip + 추이 카드 (files: src/components/YoyCompareCard.tsx, src/components/TrendCard.tsx)
-- 0014: S4 가전 추가/편집 BottomSheet + 영속화 (files: src/components/ApplianceSheet.tsx, src/hooks/useAppliances.ts)
-- 0016: S5 TossRewardAd 게이트 + 24시간 열람권 (files: src/components/ReportGate.tsx, src/hooks/useReportUnlock.ts)
-- 0018: S6 프로필 BottomSheet (지역·가구원수) (files: src/components/ProfileSheet.tsx, src/hooks/useProfile.ts)
 - 0009: S2 결과 화면 렌더링 — 히어로·구간 카드·내역 카드 (/result) (files: src/pages/Result.tsx)
+- 0010: S2 결과 자동 저장 + state 가드 (files: src/hooks/useResultGuard.ts, src/hooks/useAutoSaveRecord.ts)
 - 0011: S3 검침 기록 화면 — 목록·삭제·빈 상태 (/history) (files: src/pages/History.tsx)
+- 0012: S3 전년 동월 비교 Chip + 추이 카드 (files: src/components/YoyCompareCard.tsx, src/components/TrendCard.tsx)
 - 0013: S4 시뮬레이션 화면 — 히어로·비교 카드·구간 하락 배지 (/simulate) (files: src/pages/Simulate.tsx)
+- 0014: S4 가전 추가/편집 BottomSheet + 영속화 (files: src/components/ApplianceSheet.tsx, src/hooks/useAppliances.ts)
 - 0015: S5 리포트 본문 — 팁 카드 + state 가드 (/report) (files: src/pages/Report.tsx)
+- 0016: S5 TossRewardAd 게이트 + 24시간 열람권 (files: src/components/ReportGate.tsx, src/hooks/useReportUnlock.ts)
 - 0017: S6 우리 동네 비교 — 지연 로더 + 히어로 (/region) (files: src/pages/Region.tsx)
+- 0018: S6 프로필 BottomSheet (지역·가구원수) (files: src/components/ProfileSheet.tsx, src/hooks/useProfile.ts)
 - 0019: S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/settings) (files: src/pages/Settings.tsx)
 - 0020: 라우팅 배선 + FloatingTabBar + 전역 Provider (App.tsx 단독 소유) (files: src/App.tsx, src/components/FloatingTabBar.tsx)
 
