@@ -131,12 +131,15 @@ export function mockTds() {
         ),
     ),
 
+    // 실사용 패턴은 항상 title={<Top.TitleParagraph>...</Top.TitleParagraph>}(이미 <h1>)이므로
+    // 여기서 title을 또 <h1>로 감싸면 <h1> 안에 <h1>이 중첩돼 jsdom이 validateDOMNesting
+    // console.error를 던진다(실앱 결함이 아니라 이 목의 이중 래핑 버그) — title은 그대로 렌더.
     Top: Object.assign(
       ({ children, title }: any) =>
         React.createElement(
           "nav",
           { role: "navigation" },
-          title && React.createElement("h1", null, title),
+          title,
           children,
         ),
       {
