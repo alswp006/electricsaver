@@ -115,7 +115,7 @@ describe("S7 설정 화면 — 데이터 관리 · 저장 용량 · 고지 (/set
     expect(version.getAttribute("data-typography")).toBe("st12");
   });
 
-  it("AC-4[P0]: 외부 앱 설치 유도 문구나 다운로드 링크가 DOM에 0건이다", () => {
+  it("AC-4[P0]: 외부 설치 유도 문구나 다운로드 링크가 DOM에 0건이다", () => {
     renderWithRouter(React.createElement(Settings));
 
     expect(document.querySelectorAll("a[href]").length).toBe(0);
