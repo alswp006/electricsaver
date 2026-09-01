@@ -57,8 +57,24 @@ export type useAutoSaveRecordFn = (record: UsageRecord | null) => void;
 
 ## Shared Types Contract (IMPORT these, do NOT redefine)
 ```typescript
-// Domain types — add your app-specific types here
-export {};
+// Bill calculation types
+export interface StageBreakdown {
+  stage: 1 | 2 | 3;
+  kWh: number;
+  unitPrice: number;
+  charge: number;
+}
+
+export interface BillBreakdown {
+  baseCharge: number;
+  energyCharge: number;
+  subtotal: number;
+  vat: number;
+  fund: number;
+  total: number;
+  stage: 1 | 2 | 3;
+  stageBreakdown: StageBreakdown[];
+}
 
 ```
 
@@ -85,6 +101,8 @@ export {};
     regionAverage.json
     savingTips.ts
   domain/
+    __tests__/
+    calculateBill.ts
     rateTable.ts
   hooks/
   lib/
@@ -108,6 +126,7 @@ export {};
 ### Exports (src/lib/)
 - contract.ts: export type UsageRecord =; export type Appliance =; export type Profile =; export type BillBreakdown =; export type Unlock =; export type RateTable =; export type RouteState =; export type calculateBillFn = (usageKwh: number, rate: RateTable) => BillBreakdown
 - storage.ts: export function getItem<T>(key: string): T | null; export function setItem<T>(key: string, value: T): void; export function removeItem(key: string): void
+- types.ts: export interface StageBreakdown; export interface BillBreakdown
 - utils.ts: export function cn(...classes: (string | boolean | undefined | null)[]): string; export function formatNumber(n: number): string; export function formatCurrency(n: number, currency = 'KRW'): string
 
 ### Components (src/components/)
@@ -130,6 +149,7 @@ CRITICAL: Before creating any new function, type, or component, check the list a
 ## Already Implemented (do NOT duplicate or overwrite)
 - 0001: 엔티티 타입 + RouteState 계약 정의 (files: src/types/domain.ts, src/types/navigation.ts, src/types/storage.ts)
 - 0002: 요금표 상수 + 정적 카탈로그 데이터 (files: src/domain/rateTable.ts, src/data/applianceCatalog.ts, src/data/savingTips.ts, src/data/regionAverage.json)
+- 0003: calculateBill 계산 엔진 + CP-6 픽스처 테스트 (files: src/domain/calculateBill.ts, src/domain/__tests__/calculateBill.test.ts)
 
 ## Available exports from existing files
 // src/App.tsx
