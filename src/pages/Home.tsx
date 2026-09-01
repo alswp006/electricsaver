@@ -1,73 +1,170 @@
-import { Top, Paragraph, Spacing, ListRow, Button } from '@toss/tds-mobile';
-import { useNavigate } from 'react-router-dom';
-import { ScreenScaffold } from '../components/ScreenScaffold';
-import { SummaryHero } from '../components/SummaryHero';
-import { Card } from '../components/Card';
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Top, TextField, Tab, ListRow, BottomSheet, Paragraph, Spacing } from "@toss/tds-mobile";
+import { generateHapticFeedback } from "@apps-in-toss/web-framework";
+import { ScreenScaffold } from "@/components/ScreenScaffold";
+import { SubmitFooter } from "@/components/BottomCTA";
+import { AdSlot } from "@/components/AdSlot";
+import { LoadingState } from "@/components/StateView";
+import { getSettings, saveSettings } from "@/lib/settingsStore";
+import { validateUsageInput, validateYearMonth } from "@/domain/validation";
+import type { BillInput, ContractType, RouteState } from "@/lib/types";
 
-/**
- * Golden Home page — 대시보드/탭-루트 골든 레퍼런스.
- *
- * 다른 페이지를 쓸 때 이 패턴을 모방하라:
- * - ScreenScaffold로 감싼다(raw fragment 골격 금지) — safe-area + 100dvh 자동 처리.
- * - 화면 최상단에 SummaryHero로 시각 앵커를 만든다('휑함'의 가장 큰 원인은 앵커 부재).
- *   데이터가 있으면 value에 <Amount value={n} unit="원" typography="t1" />로 핵심 숫자를 크게 박아라.
- * - 1차 진입 액션은 SummaryHero 카드 내부 버튼(display="block", 전체폭)에 둔다.
- *   → 화면 중앙 부유/좌측 글자폭 버튼 금지. 하단 TabBar가 있으면 SubmitFooter와 겹치므로 카드 안에.
- * - 핵심 정보는 raw <div>가 아니라 Card로 묶어 위계를 만든다.
- * - 하단 탭이 필요하면(2~5탭): bottom={<FloatingTabBar items={[{label,path}...]} />}.
- *   ('TDS TabBar'는 존재하지 않는다 — 직접 만들지 말고 FloatingTabBar를 써라.)
- * - 카피는 CLAUDE.md "카피 규칙 — AI 냄새 금지"를 따른다: 기능 나열식 홍보 문구·상투구·
- *   generic 버튼("시작하기") 금지. 이 파일의 예시 문구도 앱 맥락에 맞게 교체 대상이다.
- *
- * Scaffold tokens (replaced by scaffold-toss.ts at project creation):
- *   ElectricSaver -> the app's display name
- *   우리집 전기 사용량을 입력하면 누진세 구간과 예상 요금을 계산하고 절약 시뮬레이션으로 다음 달 요금을 낮추는 법을 알려주는 생활 계산기    -> the one-line description
- */
+function fireHaptic(type: "tickWeak") {
+  try {
+    Promise.resolve(generateHapticFeedback({ type })).catch(() => {});
+  } catch {
+    /* WebView 밖(브라우저/검수자 PC/jsdom)에서는 throw — 무시 */
+  }
+}
 
-// ⚠ 이 목록은 골격 예시다 — 앱의 실제 콘텐츠(핵심 지표·최근 기록·바로가기)로 반드시 교체하라.
-// '간편한 사용/빠른 처리' 같은 기능 나열식 홍보 문구는 카피 규칙(CLAUDE.md "AI 냄새 금지") 위반이다.
-// 사용자가 이 화면에서 실제로 확인할 정보를 넣어라 — 아래처럼 데이터가 사는 행으로.
-const HIGHLIGHTS = [
-  { title: '오늘', description: '아직 기록이 없어요' },
-  { title: '이번 주', description: '기록 3건 · 평균 12분' },
-];
+function formatYearMonth(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function recentYearMonths(count: number): string[] {
+  const now = new Date();
+  const result: string[] = [];
+  for (let i = 0; i < count; i++) {
+    result.push(formatYearMonth(new Date(now.getFullYear(), now.getMonth() - i, 1)));
+  }
+  return result;
+}
 
 export default function Home() {
   const navigate = useNavigate();
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [contractType, setContractType] = useState<ContractType>("low");
+  const [kWhText, setKWhText] = useState("");
+  const [kWhError, setKWhError] = useState<string | null>(null);
+  const [yearMonth, setYearMonth] = useState(() => formatYearMonth(new Date()));
+  const [monthSheetOpen, setMonthSheetOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const settings = getSettings();
+      setContractType(settings.contractType);
+      setYearMonth(settings.lastYearMonth ?? formatYearMonth(new Date()));
+      setSettingsLoading(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const recentMonths = useMemo(() => recentYearMonths(24), []);
+  const monthValidation = useMemo(
+    () => validateYearMonth(yearMonth, new Date()),
+    [yearMonth],
+  );
+  const monthError = monthValidation.ok ? null : monthValidation.message;
+
+  const handleContractChange = (next: ContractType) => {
+    if (next === contractType) return;
+    fireHaptic("tickWeak");
+    setContractType(next);
+    saveSettings({ contractType: next });
+  };
+
+  const handleSelectMonth = (ym: string) => {
+    fireHaptic("tickWeak");
+    setYearMonth(ym);
+    saveSettings({ lastYearMonth: ym });
+    setMonthSheetOpen(false);
+  };
+
+  const handleSubmit = () => {
+    const usage = validateUsageInput(kWhText);
+    if (!usage.ok) {
+      setKWhError(usage.message);
+      return;
+    }
+    setKWhError(null);
+
+    if (monthError) {
+      return;
+    }
+
+    const input: BillInput = { kWh: usage.kWh, yearMonth, contractType };
+    navigate("/result", { state: { input } satisfies RouteState["/result"] });
+  };
 
   return (
     <ScreenScaffold
-      top={<Top title={<Top.TitleParagraph>ElectricSaver</Top.TitleParagraph>} />}
+      top={<Top title={<Top.TitleParagraph>우리집 전기요금</Top.TitleParagraph>} />}
+      bottom={<SubmitFooter label="요금 계산하기" onClick={handleSubmit} disabled={settingsLoading} />}
     >
-      {/* 시각 앵커: 헤드라인 + 카드 내 진입 버튼(부유 금지, display="block" 전체폭).
-          데이터 앱이면 value를 <Amount typography="t1" />(핵심 숫자)로 교체하라. */}
-      <SummaryHero
-        label="ElectricSaver"
-        value={<Paragraph.Text typography="t2">우리집 전기 사용량을 입력하면 누진세 구간과 예상 요금을 계산하고 절약 시뮬레이션으로 다음 달 요금을 낮추는 법을 알려주는 생활 계산기</Paragraph.Text>}
-        caption="로그인 없이 바로 쓸 수 있어요"
-        action={
-          // 라벨은 앱의 핵심 행동 동사로 교체하라 — "연봉 계산하기"/"기록 남기기" 등.
-          // generic "시작하기"/"확인"은 카피 규칙 위반. onClick도 실제 첫 화면 경로로.
-          <Button variant="fill" display="block" onClick={() => navigate('/')}>
-            첫 결과 보기
-          </Button>
-        }
-        testId="home-hero"
-      />
+      {settingsLoading ? (
+        <LoadingState rows={3} testId="home-skeleton" />
+      ) : (
+        <>
+          <Tab onChange={(index) => handleContractChange(index === 0 ? "low" : "high")}>
+            <Tab.Item selected={contractType === "low"} onClick={() => handleContractChange("low")}>
+              저압
+            </Tab.Item>
+            <Tab.Item selected={contractType === "high"} onClick={() => handleContractChange("high")}>
+              고압
+            </Tab.Item>
+          </Tab>
+          <Spacing size={4} />
+          <Paragraph.Text typography="st13">아파트는 대부분 고압이에요</Paragraph.Text>
 
-      <Spacing size={24} />
-
-      {/* 핵심 정보는 Card로 묶기(raw div 금지) — 위계 생성 */}
-      <Card testId="home-highlights">
-        {HIGHLIGHTS.map((h, idx) => (
-          <ListRow
-            key={idx}
-            contents={<ListRow.Texts type="2RowTypeA" top={h.title} bottom={h.description} />}
+          <Spacing size={16} />
+          <TextField
+            variant="box"
+            label="이번 달 사용량 (kWh)"
+            placeholder="예: 320"
+            value={kWhText}
+            inputMode="numeric"
+            enterKeyHint="done"
+            pattern="[0-9]*"
+            hasError={!!kWhError}
+            help={kWhError ?? "검침표의 kWh를 그대로 넣어주세요"}
+            onChange={(e) => {
+              setKWhText(e.target.value);
+              if (kWhError) setKWhError(null);
+            }}
           />
-        ))}
-      </Card>
 
-      <Spacing size={24} />
+          <Spacing size={12} />
+          <ListRow
+            data-testid="home-yearmonth-row"
+            onClick={() => setMonthSheetOpen(true)}
+            contents={<ListRow.Texts type="2RowTypeA" top="검침 연월" bottom={yearMonth} />}
+            right={<Paragraph.Text typography="st11">변경</Paragraph.Text>}
+          />
+          {monthError && (
+            <>
+              <Spacing size={8} />
+              <Paragraph.Text typography="st12">{monthError}</Paragraph.Text>
+            </>
+          )}
+
+          <Spacing size={16} />
+          <AdSlot adGroupId={import.meta.env.VITE_TOSS_AD_GROUP_ID ?? ""} />
+
+          <Spacing size={12} />
+          <Paragraph.Text typography="st13">
+            한국전력 주택용 전력 기준 · v2024.01 · 기록은 이 기기에만 저장돼요
+          </Paragraph.Text>
+          <Spacing size={80} />
+
+          <BottomSheet
+            open={monthSheetOpen}
+            onDimmerClick={() => setMonthSheetOpen(false)}
+            header={<Paragraph.Text typography="t5">검침 연월 선택</Paragraph.Text>}
+          >
+            <div style={{ maxHeight: "50vh", overflowY: "auto" }}>
+              {recentMonths.map((ym) => (
+                <ListRow
+                  key={ym}
+                  data-testid={`month-option-${ym}`}
+                  onClick={() => handleSelectMonth(ym)}
+                  contents={<ListRow.Texts type="1RowTypeA" top={ym} />}
+                />
+              ))}
+            </div>
+          </BottomSheet>
+        </>
+      )}
     </ScreenScaffold>
   );
 }
