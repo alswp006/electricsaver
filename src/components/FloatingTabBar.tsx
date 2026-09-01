@@ -7,6 +7,8 @@ export type TabItem = {
   /** Asset.ContentIcon 등(선택). 없으면 라벨만 표시. */
   icon?: ReactNode;
   path: string;
+  /** location.state가 필요한 탭용(선택) — navigate(path, { state }) 로 전달된다. */
+  state?: unknown;
 };
 
 /**
@@ -34,7 +36,9 @@ export function FloatingTabBar({ items }: { items: TabItem[] }) {
         display: "flex",
         justifyContent: "space-around",
         alignItems: "stretch",
-        padding: "6px 8px calc(var(--toss-safe-area-bottom) + 6px)",
+        // safe-area 변수는 토스 WebView 밖(브라우저 미리보기)에서 비어 있을 수 있다 →
+        // var()가 무효면 padding 선언 전체가 날아가므로 env() 폴백을 둔다.
+        padding: "6px 8px calc(var(--toss-safe-area-bottom, env(safe-area-inset-bottom, 0px)) + 6px)",
         backgroundColor: "var(--adaptiveBackground)",
         borderTop: "1px solid var(--adaptiveGrey200)",
       }}
@@ -55,7 +59,7 @@ export function FloatingTabBar({ items }: { items: TabItem[] }) {
               } catch {
                 /* WebView 밖에서는 throw — 무시 */
               }
-              navigate(item.path);
+              navigate(item.path, item.state !== undefined ? { state: item.state } : undefined);
             }}
             style={{
               flex: 1,

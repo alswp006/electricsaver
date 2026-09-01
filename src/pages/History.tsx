@@ -78,6 +78,8 @@ export default function History() {
                 key={`${r.yearMonth}-${r.createdAt}`}
                 data-testid="record-row"
                 style={{ minHeight: 56 }}
+                contents={rowTexts}
+                right={rightContent}
               >
                 {rowTexts}
                 {rightContent}

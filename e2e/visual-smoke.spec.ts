@@ -14,8 +14,9 @@ const ROUTES: { path: string; name: string }[] = [
   { path: "/", name: "home" },
   { path: "/history", name: "history" },
   { path: "/region", name: "region" },
-  // { path: "/result", name: "result" },   // ← 이 앱의 라우트를 추가
-  // { path: "/settings", name: "settings" },
+  { path: "/settings", name: "settings" },
+  // /result·/simulate·/report는 location.state로만 진입한다(직접 URL 진입 시 홈으로 replace) —
+  // 브라우저 주소로는 재현할 수 없어 스모크 대상에서 제외.
 ];
 
 /** 데이터가 필요한 화면용 localStorage 시드(앱에 맞게 채워라). 앱 스크립트보다 먼저 실행된다. */
